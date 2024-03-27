@@ -12,7 +12,10 @@ repositories {
     mavenCentral()
 }
 
-val include: Configuration by configurations.creating
+val include: Configuration by configurations.creating {
+    extendsFrom(configurations.runtimeClasspath.get())
+    extendsFrom(configurations.compileClasspath.get())
+}
 
 dependencies {
     // runtime dependency on the old version so we can see it but cant reference it
