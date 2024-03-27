@@ -1,0 +1,12 @@
+# gradle caches
+.gradle/
+build/
+
+# idea project files
+.idea/
+*.iml
+# keep the run configurations though
+!.idea/runConfigurations/
+
+# macos 💀
+.DS_Store
