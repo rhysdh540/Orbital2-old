@@ -1,6 +1,7 @@
 plugins {
     java
     idea
+    id("edu.sc.seis.macAppBundle") version "2.3.1"
 }
 
 group = "maven_group"()
@@ -8,8 +9,17 @@ version = "app_version"()
 
 base.archivesName = "archives_base_name"()
 
+configurations.default.get().isCanBeResolved = true
+
 repositories {
     mavenCentral()
+}
+
+macAppBundle {
+    mainClassName = "samuschair.orbital2.Orbital2Main"
+    bundleJRE = true
+    javaProperties["apple.laf.useScreenMenuBar"] = "true"
+    javaExtras["-XstartOnFirstThread"] = null
 }
 
 val include: Configuration by configurations.creating
