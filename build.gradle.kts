@@ -10,7 +10,7 @@ version = "app_version"()
 
 base.archivesName = "archives_base_name"()
 
-configurations.default.get().isCanBeResolved = true
+val includeMac: Configuration by configurations.creating
 
 repositories {
     mavenCentral()
@@ -18,9 +18,13 @@ repositories {
 
 macAppBundle {
     mainClassName = "samuschair.orbital2.Orbital2Main"
-    bundleJRE = true
-    javaProperties["apple.laf.useScreenMenuBar"] = "true"
     javaExtras["-XstartOnFirstThread"] = null
+    runtimeConfigurationName = includeMac.name
+    jreHome = javaToolchains.launcherFor { languageVersion = JavaLanguageVersion.of(17) }.get().executablePath.asFile
+            .parentFile // bin
+            .parentFile // home
+            .toString()
+    bundleIdentifier = "$group.${base.archivesName}"
 }
 
 dependencies {
@@ -34,15 +38,42 @@ dependencies {
     val nativesPlatforms = "lwjgl_natives"().split(", ")
     val modules = "lwjgl_modules"().split(", ")
 
-    shadow(implementation(platform("org.lwjgl:lwjgl-bom:$lwjglVersion"))!!)
-    shadow(implementation("org.lwjgl:lwjgl")!!)
-    for(platform in nativesPlatforms) {
-        shadow(runtimeOnly("org.lwjgl:lwjgl:$lwjglVersion:natives-$platform")!!)
+    platform("org.lwjgl:lwjgl-bom:$lwjglVersion").also {
+        implementation(it)
+        shadow(it)
+        includeMac(it)
     }
+
+    "org.lwjgl:lwjgl".also {
+        implementation(it)
+        shadow(it)
+        includeMac(it)
+    }
+
+    for(platform in nativesPlatforms) {
+        "org.lwjgl:lwjgl:$lwjglVersion:natives-$platform".also {
+            runtimeOnly(it)
+            shadow(it)
+            if(platform.startsWith("macos")) {
+                includeMac(it)
+            }
+        }
+    }
+
     for(module in modules) {
-        shadow(implementation("org.lwjgl:lwjgl-$module")!!)
+        "org.lwjgl:lwjgl-$module".also {
+            implementation(it)
+            shadow(it)
+            includeMac(it)
+        }
         for(platform in nativesPlatforms) {
-            shadow(runtimeOnly("org.lwjgl:lwjgl-$module:$lwjglVersion:natives-$platform")!!)
+            "org.lwjgl:lwjgl-$module:$lwjglVersion:natives-$platform".also {
+                runtimeOnly(it)
+                shadow(it)
+                if(platform.startsWith("macos")) {
+                    includeMac(it)
+                }
+            }
         }
     }
 }
