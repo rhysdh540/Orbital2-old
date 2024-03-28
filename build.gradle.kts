@@ -50,24 +50,13 @@ tasks.jar {
         attributes["Main-Class"] = "samuschair.orbital2.Orbital2Main"
     }
 
-    val excludes = listOf(
-            "maven",
-            "versions",
-            "native-image",
-            "windows", "macos", "linux",
-    )
-
     from(include.map {
-        for(exclude in excludes) {
-            if(it.toString().startsWith("META-INF/$exclude")) {
-                return@map null
-            }
-        }
-
         if (it.isDirectory)
             it
         else
-            zipTree(it)
+            zipTree(it).matching {
+                exclude("META-INF/**")
+            }
     })
 
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
