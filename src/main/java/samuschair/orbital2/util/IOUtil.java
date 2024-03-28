@@ -1,5 +1,8 @@
 package samuschair.orbital2.util;
 
+import org.lwjgl.BufferUtils;
+import org.lwjgl.system.MemoryUtil;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
@@ -11,16 +14,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-import static org.lwjgl.BufferUtils.*;
-import static org.lwjgl.system.MemoryUtil.*;
-
 public final class IOUtil {
 
-	private IOUtil() {
-	}
+	private IOUtil() {}
 
 	private static ByteBuffer resizeBuffer(ByteBuffer buffer, int newCapacity) {
-		ByteBuffer newBuffer = createByteBuffer(newCapacity);
+		ByteBuffer newBuffer = BufferUtils.createByteBuffer(newCapacity);
 		buffer.flip();
 		newBuffer.put(buffer);
 		return newBuffer;
@@ -42,7 +41,7 @@ public final class IOUtil {
 		Path path = resource.startsWith("http") ? null : Paths.get(resource);
 		if (path != null && Files.isReadable(path)) {
 			try (SeekableByteChannel fc = Files.newByteChannel(path)) {
-				buffer = createByteBuffer((int)fc.size() + 1);
+				buffer = BufferUtils.createByteBuffer((int)fc.size() + 1);
 				while (fc.read(buffer) != -1);
 			}
 		} else {
@@ -52,7 +51,7 @@ public final class IOUtil {
 							: IOUtil.class.getClassLoader().getResourceAsStream(resource);
 					ReadableByteChannel rbc = Channels.newChannel(source)
 			) {
-				buffer = createByteBuffer(bufferSize);
+				buffer = BufferUtils.createByteBuffer(bufferSize);
 
 				while (true) {
 					int bytes = rbc.read(buffer);
@@ -67,6 +66,6 @@ public final class IOUtil {
 		}
 
 		buffer.flip();
-		return memSlice(buffer);
+		return MemoryUtil.memSlice(buffer);
 	}
 }
