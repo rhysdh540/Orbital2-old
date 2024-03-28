@@ -32,14 +32,30 @@ import static org.lwjgl.system.MemoryStack.*;
 import static org.lwjgl.system.MemoryUtil.*;
 import static samuschair.orbital2.util.IOUtil.ioResourceToByteBuffer;
 
+@SuppressWarnings({"resource", "SameParameterValue"})
 public class Orbital2Main {
+
+	public static final boolean isRunningInIDE;
+	static {
+		@SuppressWarnings("DataFlowIssue") // the class file is guaranteed to exist
+		String resource = Orbital2Main.class.getResource("Orbital2Main.class").toString();
+
+		// If we are in a jar (in production), the resource will be a jar:file:... URL
+		// If we are in an IDE, the resource will be in the build/classes/... directory
+		isRunningInIDE = !resource.startsWith("jar:");
+
+		if(isRunningInIDE) {
+			System.out.println("Running in IDE");
+			System.setProperty("org.lwjgl.util.Debug", "true");
+		}
+	}
 
 	private static final int BUFFER_INITIAL_SIZE = 4 * 1024;
 
 	private static final int MAX_VERTEX_BUFFER  = 512 * 1024;
 	private static final int MAX_ELEMENT_BUFFER = 128 * 1024;
 
-	private static final NkAllocator ALLOCATOR;
+	public static final NkAllocator ALLOCATOR;
 
 	private static final NkDrawVertexLayoutElement.Buffer VERTEX_LAYOUT;
 
@@ -70,11 +86,11 @@ public class Orbital2Main {
 	private static int width, height; // The pixel dimensions of the GLFW window
 	private static int display_width, display_height; // The pixel dimensions of the content inside the window, this will usually be the same size as the window.
 
-	private static NkContext ctx = org.lwjgl.nuklear.NkContext.create(); // Create a Nuklear context, it is used everywhere.
-	private static NkUserFont default_font = NkUserFont.create(); // This is the Nuklear font object used for rendering text.
+	private static final NkContext ctx = org.lwjgl.nuklear.NkContext.create(); // Create a Nuklear context, it is used everywhere.
+	private static final NkUserFont default_font = NkUserFont.create(); // This is the Nuklear font object used for rendering text.
 
-	private static NkBuffer cmds = NkBuffer.create(); // Stores a list of drawing commands that will be passed to OpenGL to render the interface.
-	private static NkDrawNullTexture null_texture = NkDrawNullTexture.create(); // An empty texture used for drawing.
+	private static final NkBuffer cmds = NkBuffer.create(); // Stores a list of drawing commands that will be passed to OpenGL to render the interface.
+	private static final NkDrawNullTexture null_texture = NkDrawNullTexture.create(); // An empty texture used for drawing.
 
 	/**
 	 * The following variables are used for OpenGL.
@@ -86,7 +102,7 @@ public class Orbital2Main {
 	private static int uniform_tex;
 	private static int uniform_proj;
 
-	private static TestWindow demo = new TestWindow();
+	private static final TestWindow demo = new TestWindow();
 
 	public static void main(String[] args) {
 		GLFWErrorCallback.createPrint().set();
@@ -102,7 +118,10 @@ public class Orbital2Main {
 		if (Platform.get() == Platform.MACOSX) {
 			glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GLFW_TRUE);
 		}
-		glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
+
+		if(isRunningInIDE) {
+			glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
+		}
 
 		int WINDOW_WIDTH  = 640;
 		int WINDOW_HEIGHT = 640;
@@ -275,28 +294,30 @@ public class Orbital2Main {
 	private static void setupContext() {
 		String NK_SHADER_VERSION = Platform.get() == Platform.MACOSX ? "#version 150\n" : "#version 300 es\n";
 		String vertex_shader =
-				NK_SHADER_VERSION +
-						"uniform mat4 ProjMtx;\n" +
-						"in vec2 Position;\n" +
-						"in vec2 TexCoord;\n" +
-						"in vec4 Color;\n" +
-						"out vec2 Frag_UV;\n" +
-						"out vec4 Frag_Color;\n" +
-						"void main() {\n" +
-						"   Frag_UV = TexCoord;\n" +
-						"   Frag_Color = Color;\n" +
-						"   gl_Position = ProjMtx * vec4(Position.xy, 0, 1);\n" +
-						"}\n";
+				NK_SHADER_VERSION + """
+					uniform mat4 ProjMtx;
+					in vec2 Position;
+					in vec2 TexCoord;
+					in vec4 Color;
+					out vec2 Frag_UV;
+					out vec4 Frag_Color;
+					void main() {
+						Frag_UV = TexCoord;
+						Frag_Color = Color;
+						gl_Position = ProjMtx * vec4(Position.xy, 0, 1);
+					}
+					""";
 		String fragment_shader =
-				NK_SHADER_VERSION +
-						"precision mediump float;\n" +
-						"uniform sampler2D Texture;\n" +
-						"in vec2 Frag_UV;\n" +
-						"in vec4 Frag_Color;\n" +
-						"out vec4 Out_Color;\n" +
-						"void main(){\n" +
-						"   Out_Color = Frag_Color * texture(Texture, Frag_UV.st);\n" +
-						"}\n";
+				NK_SHADER_VERSION + """
+					precision mediump float;
+					uniform sampler2D Texture;
+					in vec2 Frag_UV;
+					in vec4 Frag_Color;
+					out vec4 Out_Color;
+					void main() {
+						Out_Color = Frag_Color * texture(Texture, Frag_UV.st);
+					}
+					""";
 
 		nk_buffer_init(cmds, ALLOCATOR, BUFFER_INITIAL_SIZE);
 		prog = glCreateProgram();
@@ -307,16 +328,16 @@ public class Orbital2Main {
 		glCompileShader(vert_shdr);
 		glCompileShader(frag_shdr);
 		if (glGetShaderi(vert_shdr, GL_COMPILE_STATUS) != GL_TRUE) {
-			throw new IllegalStateException();
+			throw new IllegalStateException("Failed to compile vertex shader");
 		}
 		if (glGetShaderi(frag_shdr, GL_COMPILE_STATUS) != GL_TRUE) {
-			throw new IllegalStateException();
+			throw new IllegalStateException("Failed to compile fragment shader");
 		}
 		glAttachShader(prog, vert_shdr);
 		glAttachShader(prog, frag_shdr);
 		glLinkProgram(prog);
 		if (glGetProgrami(prog, GL_LINK_STATUS) != GL_TRUE) {
-			throw new IllegalStateException();
+			throw new IllegalStateException("Failed to link shader program");
 		}
 
 		uniform_tex = glGetUniformLocation(prog, "Texture");
@@ -377,49 +398,27 @@ public class Orbital2Main {
 		glfwSetCharCallback(win, (window, codepoint) -> nk_input_unicode(ctx, codepoint));
 		glfwSetKeyCallback(win, (window, key, scancode, action, mods) -> {
 			boolean press = action == GLFW_PRESS;
-			switch (key) {
-				case GLFW_KEY_ESCAPE:
-					glfwSetWindowShouldClose(window, true);
-					break;
-				case GLFW_KEY_DELETE:
-					nk_input_key(ctx, NK_KEY_DEL, press);
-					break;
-				case GLFW_KEY_ENTER:
-					nk_input_key(ctx, NK_KEY_ENTER, press);
-					break;
-				case GLFW_KEY_TAB:
-					nk_input_key(ctx, NK_KEY_TAB, press);
-					break;
-				case GLFW_KEY_BACKSPACE:
-					nk_input_key(ctx, NK_KEY_BACKSPACE, press);
-					break;
-				case GLFW_KEY_UP:
-					nk_input_key(ctx, NK_KEY_UP, press);
-					break;
-				case GLFW_KEY_DOWN:
-					nk_input_key(ctx, NK_KEY_DOWN, press);
-					break;
-				case GLFW_KEY_HOME:
+			switch(key) {
+				case GLFW_KEY_ESCAPE -> glfwSetWindowShouldClose(window, true);
+				case GLFW_KEY_DELETE -> nk_input_key(ctx, NK_KEY_DEL, press);
+				case GLFW_KEY_ENTER -> nk_input_key(ctx, NK_KEY_ENTER, press);
+				case GLFW_KEY_TAB -> nk_input_key(ctx, NK_KEY_TAB, press);
+				case GLFW_KEY_BACKSPACE -> nk_input_key(ctx, NK_KEY_BACKSPACE, press);
+				case GLFW_KEY_UP -> nk_input_key(ctx, NK_KEY_UP, press);
+				case GLFW_KEY_DOWN -> nk_input_key(ctx, NK_KEY_DOWN, press);
+				case GLFW_KEY_HOME -> {
 					nk_input_key(ctx, NK_KEY_TEXT_START, press);
 					nk_input_key(ctx, NK_KEY_SCROLL_START, press);
-					break;
-				case GLFW_KEY_END:
+				}
+				case GLFW_KEY_END -> {
 					nk_input_key(ctx, NK_KEY_TEXT_END, press);
 					nk_input_key(ctx, NK_KEY_SCROLL_END, press);
-					break;
-				case GLFW_KEY_PAGE_DOWN:
-					nk_input_key(ctx, NK_KEY_SCROLL_DOWN, press);
-					break;
-				case GLFW_KEY_PAGE_UP:
-					nk_input_key(ctx, NK_KEY_SCROLL_UP, press);
-					break;
-				case GLFW_KEY_LEFT_SHIFT:
-				case GLFW_KEY_RIGHT_SHIFT:
-					nk_input_key(ctx, NK_KEY_SHIFT, press);
-					break;
-				case GLFW_KEY_LEFT_CONTROL:
-				case GLFW_KEY_RIGHT_CONTROL:
-					if (press) {
+				}
+				case GLFW_KEY_PAGE_DOWN -> nk_input_key(ctx, NK_KEY_SCROLL_DOWN, press);
+				case GLFW_KEY_PAGE_UP -> nk_input_key(ctx, NK_KEY_SCROLL_UP, press);
+				case GLFW_KEY_LEFT_SHIFT, GLFW_KEY_RIGHT_SHIFT -> nk_input_key(ctx, NK_KEY_SHIFT, press);
+				case GLFW_KEY_LEFT_CONTROL, GLFW_KEY_RIGHT_CONTROL -> {
+					if(press) {
 						nk_input_key(ctx, NK_KEY_COPY, glfwGetKey(window, GLFW_KEY_C) == GLFW_PRESS);
 						nk_input_key(ctx, NK_KEY_PASTE, glfwGetKey(window, GLFW_KEY_P) == GLFW_PRESS);
 						nk_input_key(ctx, NK_KEY_CUT, glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS);
@@ -437,7 +436,7 @@ public class Orbital2Main {
 						nk_input_key(ctx, NK_KEY_CUT, false);
 						nk_input_key(ctx, NK_KEY_SHIFT, false);
 					}
-					break;
+				}
 			}
 		});
 		glfwSetCursorPosCallback(win, (window, xpos, ypos) -> nk_input_motion(ctx, (int)xpos, (int)ypos));
@@ -451,17 +450,11 @@ public class Orbital2Main {
 				int x = (int)cx.get(0);
 				int y = (int)cy.get(0);
 
-				int nkButton;
-				switch (button) {
-					case GLFW_MOUSE_BUTTON_RIGHT:
-						nkButton = NK_BUTTON_RIGHT;
-						break;
-					case GLFW_MOUSE_BUTTON_MIDDLE:
-						nkButton = NK_BUTTON_MIDDLE;
-						break;
-					default:
-						nkButton = NK_BUTTON_LEFT;
-				}
+				int nkButton = switch(button) {
+					case GLFW_MOUSE_BUTTON_RIGHT -> NK_BUTTON_RIGHT;
+					case GLFW_MOUSE_BUTTON_MIDDLE -> NK_BUTTON_MIDDLE;
+					default -> NK_BUTTON_LEFT;
+				};
 				nk_input_button(ctx, nkButton, x, y, action == GLFW_PRESS);
 			}
 		});
@@ -604,7 +597,7 @@ public class Orbital2Main {
 						(int)(cmd.clip_rect().h() * fb_scale_y)
 				);
 				glDrawElements(GL_TRIANGLES, cmd.elem_count(), GL_UNSIGNED_SHORT, offset);
-				offset += cmd.elem_count() * 2;
+				offset += cmd.elem_count() * 2L;
 			}
 			nk_clear(ctx);
 			nk_buffer_clear(cmds);

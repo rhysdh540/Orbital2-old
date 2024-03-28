@@ -27,7 +27,7 @@ dependencies {
     // test runtime dependency on the old version so we can see it but cant reference it
     testRuntimeOnly(files("libs/orbital-old.jar"))
 
-    shadow(implementation(("org.joml:joml:${"joml_version"()}"))!!)
+//    shadow(implementation(("org.joml:joml:${"joml_version"()}"))!!)
     compileOnly("com.google.code.findbugs:jsr305:3.0.2")
 
     val lwjglVersion = "lwjgl_version"()
@@ -50,8 +50,12 @@ dependencies {
 tasks.register<JavaExec>("run") {
     dependsOn(tasks.jar)
     mainClass = "samuschair.orbital2.Orbital2Main"
-    classpath(configurations.runtimeClasspath.get(), tasks.jar.get())
-    jvmArgs = listOf("-Dorg.lwjgl.util.Debug=true", "-XstartOnFirstThread")
+    classpath(
+            configurations.runtimeClasspath.get(),
+            tasks.compileJava.get().destinationDirectory,
+            tasks.processResources.get().destinationDir
+    )
+    jvmArgs = listOf("-XstartOnFirstThread")
 }
 
 tasks.jar {

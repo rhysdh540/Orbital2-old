@@ -4,14 +4,18 @@ import org.lwjgl.BufferUtils;
 import org.lwjgl.nuklear.NkColor;
 import org.lwjgl.nuklear.NkColorf;
 import org.lwjgl.nuklear.NkContext;
+import org.lwjgl.nuklear.NkPluginFilter;
 import org.lwjgl.nuklear.NkRect;
 import org.lwjgl.nuklear.NkVec2;
+import org.lwjgl.nuklear.Nuklear;
 import org.lwjgl.system.MemoryStack;
 
+import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 
 import static org.lwjgl.nuklear.Nuklear.*;
 import static org.lwjgl.system.MemoryStack.*;
+import static org.lwjgl.system.MemoryUtil.memASCII;
 
 public class TestWindow {
 
@@ -26,7 +30,9 @@ public class TestWindow {
 
 	private int op = EASY;
 
-	private IntBuffer compression = BufferUtils.createIntBuffer(1).put(0, 20);
+	private final IntBuffer compression = BufferUtils.createIntBuffer(1).put(0, 20);
+
+	private String text = "";
 
 	void layout(NkContext ctx, int x, int y) {
 		try (MemoryStack stack = stackPush()) {
@@ -67,6 +73,21 @@ public class TestWindow {
 							.b(nk_propertyf(ctx, "#B:", 0, background.b(), 1.0f, 0.01f, 0.005f))
 							.a(nk_propertyf(ctx, "#A:", 0, background.a(), 1.0f, 0.01f, 0.005f));
 					nk_combo_end(ctx);
+				}
+
+				nk_layout_row_dynamic(ctx, 30, 1);
+				//text box
+
+				ByteBuffer buffer = stack.calloc(256);
+				NkPluginFilter filter = NkPluginFilter.create(Nuklear::nnk_filter_default);
+				int length = memASCII(text, false, buffer);
+
+				IntBuffer len = stack.ints(length);
+				nk_edit_string(ctx, NK_EDIT_FIELD, buffer, len, 255, filter);
+				try {
+					text = memASCII(buffer, len.get(0));
+				} catch (Exception e) {
+					e.printStackTrace();
 				}
 			}
 			nk_end(ctx);
