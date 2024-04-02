@@ -16,6 +16,7 @@ public class SpinnyCircleWindow extends Window {
 	}
 
 	private int motion_X = 0;
+	private int motion_Y = 0;
 
 	@Override
 	protected void render(NkContext ctx, MemoryStack stack) {
@@ -24,21 +25,16 @@ public class SpinnyCircleWindow extends Window {
 
 		nk_layout_row_dynamic(ctx, 120, 1);
 
-		NkRect space = NkRect.malloc(stack);
+		NkRect space = NkRect.malloc(stack)
+						.w(width)
+						.h(height);
 		nk_widget(space, ctx);
 
-		nk_fill_rect(canvas, space, 2, nk_rgb(160, 160, 160, NkColor.malloc(stack)));
-
-		nk_fill_circle(canvas, nk_rect(space.x() + 20 + motion_X % 100, space.y() + 60, 40, 40, space), nk_rgb(50, 50, 220, NkColor.malloc(stack)));
+//		nk_fill_rect(canvas, space, 0, nk_rgb(50, 50, 50, NkColor.malloc(stack)));
+		float x = (float) (space.x() + Math.cos(motion_X * 0.1) * 50) + width / 2 - 20;
+		float y = (float) (space.y()  + Math.sin(motion_Y * 0.1) * 50) + height / 2 - 20;
+		nk_fill_circle(canvas, nk_rect(x, y, 40, 40, space), nk_rgb(50, 50, 220, NkColor.malloc(stack)));
 		motion_X++;
-
-		nk_stroke_line(canvas, space.x() +10, space.y() + 100, space.x() + 150, space.y() + 100, 3.0f, nk_rgb(200, 20, 20, NkColor.malloc(stack)));
-
-		nk_layout_row_dynamic(ctx, 50, 1);
-		nk_label(ctx, "Hello world!", NK_TEXT_LEFT);
-
-		nk_layout_row_static(ctx, 30, 80, 1);
-		if (nk_button_label(ctx, "AnyButton"))
-			System.out.println("AnyButton pressed");
+		motion_Y++;
 	}
 }
