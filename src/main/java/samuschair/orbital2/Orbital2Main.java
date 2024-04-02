@@ -124,10 +124,7 @@ public class Orbital2Main {
 			glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
 		}
 
-		int WINDOW_WIDTH = 640;
-		int WINDOW_HEIGHT = 640;
-
-		windowId = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Orbital", NULL, NULL);
+		windowId = glfwCreateWindow(640, 640, "Orbital", NULL, NULL);
 		if(windowId == NULL) {
 			throw new RuntimeException("Failed to create the GLFW window");
 		}
@@ -253,6 +250,7 @@ public class Orbital2Main {
 		nk_style_set_font(ctx, defaultFont);
 
 		glfwShowWindow(windowId);
+		glfwMaximizeWindow(windowId);
 		while(!glfwWindowShouldClose(windowId)) {
 			/* Input */
 			newFrame();

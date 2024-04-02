@@ -25,12 +25,9 @@ public class SpinnyCircleWindow extends Window {
 
 		nk_layout_row_dynamic(ctx, 120, 1);
 
-		NkRect space = NkRect.malloc(stack)
-						.w(width)
-						.h(height);
+		NkRect space = NkRect.malloc(stack);
 		nk_widget(space, ctx);
 
-//		nk_fill_rect(canvas, space, 0, nk_rgb(50, 50, 50, NkColor.malloc(stack)));
 		float x = (float) (space.x() + Math.cos(motion_X * 0.1) * 50) + width / 2 - 20;
 		float y = (float) (space.y()  + Math.sin(motion_Y * 0.1) * 50) + height / 2 - 20;
 		nk_fill_circle(canvas, nk_rect(x, y, 40, 40, space), nk_rgb(50, 50, 220, NkColor.malloc(stack)));
