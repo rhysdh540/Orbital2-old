@@ -15,7 +15,9 @@ import org.lwjgl.system.Callback;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.Platform;
 import samuschair.orbital2.window.DemoWindow;
+import samuschair.orbital2.window.DraggyCircleWindow;
 import samuschair.orbital2.window.SpinnyCircleWindow;
+import samuschair.orbital2.window.Window;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -37,6 +39,7 @@ import static samuschair.orbital2.util.IOUtil.ioResourceToByteBuffer;
 @SuppressWarnings({"resource", "SameParameterValue"})
 public class Orbital2Main {
 
+	// region Main setup and constants
 	public static final boolean isRunningInIDE;
 
 	private static final int BUFFER_INITIAL_SIZE = 4 * 1024;
@@ -72,7 +75,9 @@ public class Orbital2Main {
 				.position(3).attribute(NK_VERTEX_ATTRIBUTE_COUNT).format(NK_FORMAT_COUNT).offset(0)
 				.flip();
 	}
+	// endregion
 
+	// region Font loading
 	private static final ByteBuffer font;
 
 	static {
@@ -82,28 +87,36 @@ public class Orbital2Main {
 			throw new RuntimeException(e);
 		}
 	}
+	// endregion
 
-	// GLFW variables
+	// region GLFW variables
 	private static long windowId; // The identifier of the GLFW window
 	private static int width, height; // The pixel dimensions of the GLFW window
 	private static int displayWidth, displayHeight; // The pixel dimensions of the content inside the window, this will usually be the same size as the window.
+	// endregion
 
-	// Nuklear variables
+	// region Nuklear variables
 	private static final NkContext ctx = NkContext.create();
 	private static final NkUserFont defaultFont = NkUserFont.create();
 	private static final NkBuffer glDrawCommands = NkBuffer.create();
 	private static final NkDrawNullTexture emptyTexture = NkDrawNullTexture.create();
+	// endregion
 
-	// GL variables
+	// region GL variables
 	private static int vbo, vao, ebo; // Vertex buffer object, vertex array object, element buffer object
 	private static int shaderProgram;
 	private static int vertexShader; // vertex shader moves the points of triangles
 	private static int fragmentShader; // fragment shader changes the colors of pixels
 	private static int uniformTexture;
 	private static int uniformProjectionMatrix;
+	// endregion
 
-	private static final DemoWindow demo = new DemoWindow();
-	private static final SpinnyCircleWindow spinnyCircle = new SpinnyCircleWindow();
+	// region Windows
+	private static final Window[] windows = {
+			new DemoWindow(),
+			new SpinnyCircleWindow(),
+			new DraggyCircleWindow()
+	};
 
 	public static void main(String[] args) {
 		GLFWErrorCallback.createPrint().set();
@@ -255,8 +268,15 @@ public class Orbital2Main {
 			/* Input */
 			newFrame();
 
-			demo.layout(ctx, 50, 50);
-			spinnyCircle.layout(ctx, 200, 200);
+			int x = 0, y = 0;
+			for(Window window : windows) {
+				window.layout(ctx, x, y);
+				x += window.getWidth();
+				if(x >= width) {
+					x = 0;
+					y += window.getHeight();
+				}
+			}
 
 			try(MemoryStack stack = stackPush()) {
 				IntBuffer width = stack.mallocInt(1);
@@ -265,6 +285,7 @@ public class Orbital2Main {
 				glfwGetWindowSize(windowId, width, height);
 				glViewport(0, 0, width.get(0), height.get(0));
 
+				DemoWindow demo = (DemoWindow) windows[0];
 				NkColorf bg = demo.background;
 				glClearColor(bg.r(), bg.g(), bg.b(), bg.a());
 			}

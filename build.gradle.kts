@@ -33,6 +33,10 @@ dependencies {
 
 //    shadow(implementation(("org.joml:joml:${"joml_version"()}"))!!)
     compileOnly("com.google.code.findbugs:jsr305:3.0.2")
+    "org.projectlombok:lombok:${"lombok_version"()}".also {
+        compileOnly(it)
+        annotationProcessor(it)
+    }
 
     val lwjglVersion = "lwjgl_version"()
     val nativesPlatforms = "lwjgl_natives"().split(", ")

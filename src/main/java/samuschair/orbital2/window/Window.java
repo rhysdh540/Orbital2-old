@@ -1,5 +1,6 @@
 package samuschair.orbital2.window;
 
+import lombok.Getter;
 import org.lwjgl.nuklear.NkContext;
 import org.lwjgl.nuklear.NkPluginFilter;
 import org.lwjgl.nuklear.NkRect;
@@ -17,9 +18,14 @@ import static org.lwjgl.nuklear.Nuklear.*;
  */
 public abstract class Window {
 
+	@Getter
 	protected String title;
+
+	@Getter
 	protected int width, height;
 	protected int flags;
+
+	protected int x, y;
 
 	public static final int DEFAULT_FLAGS = NK_WINDOW_BORDER | NK_WINDOW_MOVABLE | NK_WINDOW_SCALABLE | NK_WINDOW_MINIMIZABLE | NK_WINDOW_TITLE;
 
@@ -48,9 +54,14 @@ public abstract class Window {
 	 */
 	public void layout(NkContext ctx, int x, int y) {
 		try (MemoryStack stack = MemoryStack.stackPush()) {
+			preRender(ctx, stack);
 			if (nk_begin(ctx, title, nk_rect(x, y, width, height, NkRect.malloc(stack)), flags)) {
-				width = (int) nk_window_get_width(ctx);
-				height = (int) nk_window_get_height(ctx);
+				NkRect bounds = NkRect.malloc(stack);
+				nk_window_get_bounds(ctx, bounds);
+				this.x = (int) bounds.x();
+				this.y = (int) bounds.y();
+				this.width = (int) nk_window_get_width(ctx);
+				this.height = (int) nk_window_get_height(ctx);
 				render(ctx, stack);
 			}
 			nk_end(ctx);
