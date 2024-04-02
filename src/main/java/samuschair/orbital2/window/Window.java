@@ -17,9 +17,9 @@ import static org.lwjgl.nuklear.Nuklear.*;
  */
 public abstract class Window {
 
-	protected final String title;
-	protected final int width, height;
-	protected final int flags;
+	protected String title;
+	protected int width, height;
+	protected int flags;
 
 	public static final int DEFAULT_FLAGS = NK_WINDOW_BORDER | NK_WINDOW_MOVABLE | NK_WINDOW_SCALABLE | NK_WINDOW_MINIMIZABLE | NK_WINDOW_TITLE;
 
@@ -49,6 +49,8 @@ public abstract class Window {
 	public void layout(NkContext ctx, int x, int y) {
 		try (MemoryStack stack = MemoryStack.stackPush()) {
 			if (nk_begin(ctx, title, nk_rect(x, y, width, height, NkRect.malloc(stack)), flags)) {
+				width = (int) nk_window_get_width(ctx);
+				height = (int) nk_window_get_height(ctx);
 				render(ctx, stack);
 			}
 			nk_end(ctx);
@@ -61,4 +63,8 @@ public abstract class Window {
 	 * @param stack the memory stack
 	 */
 	protected abstract void render(NkContext ctx, MemoryStack stack);
+
+	protected void preRender(NkContext ctx, MemoryStack stack) {
+		// Do nothing by default
+	}
 }

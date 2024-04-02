@@ -15,6 +15,7 @@ import org.lwjgl.system.Callback;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.Platform;
 import samuschair.orbital2.window.DemoWindow;
+import samuschair.orbital2.window.SpinnyCircleWindow;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -102,6 +103,7 @@ public class Orbital2Main {
 	private static int uniformProjectionMatrix;
 
 	private static final DemoWindow demo = new DemoWindow();
+	private static final SpinnyCircleWindow spinnyCircle = new SpinnyCircleWindow();
 
 	public static void main(String[] args) {
 		GLFWErrorCallback.createPrint().set();
@@ -256,6 +258,7 @@ public class Orbital2Main {
 			newFrame();
 
 			demo.layout(ctx, 50, 50);
+			spinnyCircle.layout(ctx, 200, 200);
 
 			try(MemoryStack stack = stackPush()) {
 				IntBuffer width = stack.mallocInt(1);
