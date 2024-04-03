@@ -11,6 +11,7 @@ import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 
 import static org.lwjgl.nuklear.Nuklear.*;
+import static org.lwjgl.opengl.GL11C.glClearColor;
 import static org.lwjgl.system.MemoryUtil.memASCII;
 
 public class DemoWindow extends Window {
@@ -38,7 +39,7 @@ public class DemoWindow extends Window {
 	public void render(NkContext ctx, MemoryStack stack) {
 		nk_layout_row_static(ctx, 30, 80, 1);
 		if (nk_button_label(ctx, "button")) {
-			System.out.println("button pressed");
+			System.out.println("op = " + (op == EASY ? "EASY" : "HARD"));
 		}
 
 		nk_layout_row_dynamic(ctx, 30, 2);
@@ -66,6 +67,8 @@ public class DemoWindow extends Window {
 					.a(nk_propertyf(ctx, "#A:", 0, background.a(), 1.0f, 0.01f, 0.005f));
 			nk_combo_end(ctx);
 		}
+
+		glClearColor(background.r(), background.g(), background.b(), background.a());
 
 		nk_layout_row_dynamic(ctx, 30, 1);
 		ByteBuffer buffer = stack.calloc(256);

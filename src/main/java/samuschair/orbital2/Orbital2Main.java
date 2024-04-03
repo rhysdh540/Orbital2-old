@@ -12,12 +12,11 @@ import org.lwjgl.stb.STBTTFontinfo;
 import org.lwjgl.stb.STBTTPackContext;
 import org.lwjgl.stb.STBTTPackedchar;
 import org.lwjgl.system.Callback;
+import org.lwjgl.system.Configuration;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.NativeResource;
 import org.lwjgl.system.Platform;
-import samuschair.orbital2.window.DemoWindow;
-import samuschair.orbital2.window.DraggyCircleWindow;
-import samuschair.orbital2.window.SpinnyCircleWindow;
+import samuschair.orbital2.window.BouncyBallsWindow;
 import samuschair.orbital2.window.Window;
 
 import java.io.IOException;
@@ -43,6 +42,7 @@ public class Orbital2Main {
 
 	// region Main setup and constants
 	public static final boolean debug;
+	public static final int fpsLimit;
 
 	private static final int BUFFER_INITIAL_SIZE = 4 * 1024;
 
@@ -54,12 +54,24 @@ public class Orbital2Main {
 	private static final NkDrawVertexLayoutElement.Buffer VERTEX_LAYOUT;
 
 	static {
-		debug = System.getProperty("orbital.debug", "not true").equalsIgnoreCase("true");
+		debug = Boolean.parseBoolean(System.getProperty("orbital.debug", "not true"));
+
+		int fps;
+		try {
+			fps = Integer.parseInt(System.getProperty("orbital.fps", "60"));
+		} catch(NumberFormatException e) {
+			log("Invalid fps value, defaulting to 60");
+			fps = 60;
+		}
+		fpsLimit = fps;
 
 		if(debug) {
-			System.out.println("Debug mode enabled");
+			log("Debug mode enabled");
+			log("FPS limit: " + fpsLimit);
 			System.setProperty("org.lwjgl.util.Debug", "true");
 		}
+
+		Configuration.DEBUG_STREAM.set(System.out);
 
 		ALLOCATOR = NkAllocator.create()
 				.alloc((handle, old, size) -> nmemAllocChecked(size))
@@ -109,9 +121,9 @@ public class Orbital2Main {
 	// endregion
 
 	private static final Window[] windows = {
-			new DemoWindow(),
-			new SpinnyCircleWindow(),
-			new DraggyCircleWindow()
+			new BouncyBallsWindow(),
+//			new DemoWindow(),
+//			new SpinnyCircleWindow(),
 	};
 
 	public static void main(String[] args) {
@@ -141,10 +153,6 @@ public class Orbital2Main {
 
 				glfwGetWindowSize(windowId, width, height);
 				glViewport(0, 0, width.get(0), height.get(0));
-
-				DemoWindow demo = (DemoWindow) windows[0];
-				NkColorf bg = demo.background;
-				glClearColor(bg.r(), bg.g(), bg.b(), bg.a());
 			}
 			glClear(GL_COLOR_BUFFER_BIT);
 			/*
@@ -336,7 +344,7 @@ public class Orbital2Main {
 		nk_input_end(ctx);
 	}
 
-	private static void render(int AA, int maxVertexBuffer, int maxElementBuffer) {
+	private static void render(int antiAliasingEnabled, int maxVertexBuffer, int maxElementBuffer) {
 		try(MemoryStack stack = stackPush()) {
 			// setup global state
 			glEnable(GL_BLEND);
@@ -384,8 +392,8 @@ public class Orbital2Main {
 						.curve_segment_count(22)
 						.arc_segment_count(22)
 						.global_alpha(1.0f)
-						.shape_AA(AA)
-						.line_AA(AA);
+						.shape_AA(antiAliasingEnabled)
+						.line_AA(antiAliasingEnabled);
 
 				// setup buffers to load vertices and elements
 				NkBuffer vbuf = NkBuffer.malloc(stack);
@@ -455,7 +463,7 @@ public class Orbital2Main {
 		}
 
 		glfwMakeContextCurrent(windowId);
-		glfwSwapInterval(1);
+		glfwSwapInterval(fpsLimit / 60); // Enable v-sync
 		GLCapabilities caps = GL.createCapabilities();
 		Callback debugProc = GLUtil.setupDebugMessageCallback();
 
@@ -675,5 +683,9 @@ public class Orbital2Main {
 				.texture(it -> it.id(fontTexID));
 
 		nk_style_set_font(ctx, defaultFont);
+	}
+
+	public static void log(Object message) {
+		System.out.printf("[Orbital2] %s%n", message);
 	}
 }
