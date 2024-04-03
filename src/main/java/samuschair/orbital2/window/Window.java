@@ -4,8 +4,11 @@ import lombok.Getter;
 import org.lwjgl.nuklear.NkContext;
 import org.lwjgl.nuklear.NkPluginFilter;
 import org.lwjgl.nuklear.NkRect;
+import org.lwjgl.nuklear.NkWindow;
 import org.lwjgl.nuklear.Nuklear;
 import org.lwjgl.system.MemoryStack;
+
+import java.util.UUID;
 
 import static org.lwjgl.nuklear.Nuklear.*;
 
@@ -21,11 +24,17 @@ public abstract class Window {
 	@Getter
 	protected String title;
 
+	protected NkWindow window;
+
+	public final UUID id = UUID.randomUUID();
+
 	@Getter
 	protected int width, height;
 	protected int flags;
 
 	protected int x, y;
+	protected int oldX, oldY;
+	protected int oldWidth, oldHeight;
 
 	public static final int DEFAULT_FLAGS = NK_WINDOW_BORDER | NK_WINDOW_MOVABLE | NK_WINDOW_SCALABLE | NK_WINDOW_MINIMIZABLE | NK_WINDOW_TITLE;
 
@@ -56,15 +65,21 @@ public abstract class Window {
 		try (MemoryStack stack = MemoryStack.stackPush()) {
 			preRender(ctx, stack);
 			NkRect bounds = NkRect.malloc(stack);
-			if (nk_begin(ctx, title, nk_rect(x, y, width, height, bounds), flags)) {
-				updatePosition(ctx, bounds);
+			if (nk_begin_titled(ctx, id.toString(), title, nk_rect(x, y, width, height, bounds), flags)) {
+				window = nk_window_find(ctx, id.toString());
+				updatePosition(ctx, stack);
 				render(ctx, stack);
 			}
 			nk_end(ctx);
 		}
 	}
 
-	protected void updatePosition(NkContext ctx, NkRect bounds) {
+	protected void updatePosition(NkContext ctx, MemoryStack stack) {
+		oldX = x;
+		oldY = y;
+		oldWidth = width;
+		oldHeight = height;
+		NkRect bounds = nk_window_get_bounds(ctx, NkRect.malloc(stack));
 		this.x = (int) bounds.x();
 		this.y = (int) bounds.y();
 		this.width = (int) nk_window_get_width(ctx);
