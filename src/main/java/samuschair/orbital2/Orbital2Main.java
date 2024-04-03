@@ -115,148 +115,9 @@ public class Orbital2Main {
 	};
 
 	public static void main(String[] args) {
-		GLFWErrorCallback.createPrint().set();
-		if(!glfwInit()) {
-			throw new IllegalStateException("Unable to initialize glfw");
-		}
-
-		glfwDefaultWindowHints();
-		glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
-		glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-		glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-		glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-		if(Platform.get() == Platform.MACOSX) {
-			glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GLFW_TRUE);
-		}
-
-		if(debug) {
-			glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
-		}
-
-		windowId = glfwCreateWindow(640, 640, "Orbital", NULL, NULL);
-		if(windowId == NULL) {
-			throw new RuntimeException("Failed to create the GLFW window");
-		}
-
-		glfwMakeContextCurrent(windowId);
-		GLCapabilities caps = GL.createCapabilities();
-		Callback debugProc = GLUtil.setupDebugMessageCallback();
-
-		if(caps.OpenGL43) {
-			GL43.glDebugMessageControl(GL43.GL_DEBUG_SOURCE_API, GL43.GL_DEBUG_TYPE_OTHER, GL43.GL_DEBUG_SEVERITY_NOTIFICATION, (IntBuffer) null, false);
-		} else if(caps.GL_KHR_debug) {
-			KHRDebug.glDebugMessageControl(
-					KHRDebug.GL_DEBUG_SOURCE_API,
-					KHRDebug.GL_DEBUG_TYPE_OTHER,
-					KHRDebug.GL_DEBUG_SEVERITY_NOTIFICATION,
-					(IntBuffer) null,
-					false
-			);
-		} else if(caps.GL_ARB_debug_output) {
-			glDebugMessageControlARB(GL_DEBUG_SOURCE_API_ARB, GL_DEBUG_TYPE_OTHER_ARB, GL_DEBUG_SEVERITY_LOW_ARB, (IntBuffer) null, false);
-		}
-
+		Callback debugProc = glSetup();
 		NkContext ctx = setupGlfwToNuklearTranslations(windowId);
-
-		final int BITMAP_W = 1024;
-		final int BITMAP_H = 1024;
-
-		final int FONT_HEIGHT = 18;
-		int fontTexID = glGenTextures();
-
-		STBTTFontinfo fontInfo = STBTTFontinfo.create();
-		STBTTPackedchar.Buffer cdata = STBTTPackedchar.create(95);
-
-		float scale;
-		float descent;
-
-		try(MemoryStack stack = stackPush()) {
-			stbtt_InitFont(fontInfo, font);
-			scale = stbtt_ScaleForPixelHeight(fontInfo, FONT_HEIGHT);
-
-			IntBuffer d = stack.mallocInt(1);
-			stbtt_GetFontVMetrics(fontInfo, null, d, null);
-			descent = d.get(0) * scale;
-
-			ByteBuffer bitmap = memAlloc(BITMAP_W * BITMAP_H);
-
-			STBTTPackContext pc = STBTTPackContext.malloc(stack);
-			stbtt_PackBegin(pc, bitmap, BITMAP_W, BITMAP_H, 0, 1, NULL);
-			stbtt_PackSetOversampling(pc, 4, 4);
-			stbtt_PackFontRange(pc, font, 0, FONT_HEIGHT, 32, cdata);
-			stbtt_PackEnd(pc);
-
-			// Convert R8 to RGBA8
-			ByteBuffer texture = memAlloc(BITMAP_W * BITMAP_H * 4);
-			for(int i = 0; i < bitmap.capacity(); i++) {
-				texture.putInt((bitmap.get(i) << 24) | 0x00FFFFFF);
-			}
-			texture.flip();
-
-			glBindTexture(GL_TEXTURE_2D, fontTexID);
-			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, BITMAP_W, BITMAP_H, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, texture);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-
-			memFree(texture);
-			memFree(bitmap);
-		}
-
-		defaultFont
-				.width((handle, h, text, len) -> {
-					float textWidth = 0;
-					try(MemoryStack stack = stackPush()) {
-						IntBuffer unicode = stack.mallocInt(1);
-
-						int glyphLen = nnk_utf_decode(text, memAddress(unicode), len);
-						int textLen = glyphLen;
-
-						if(glyphLen == 0) {
-							return 0;
-						}
-
-						IntBuffer advance = stack.mallocInt(1);
-						while(textLen <= len && glyphLen != 0) {
-							if(unicode.get(0) == NK_UTF_INVALID) {
-								break;
-							}
-
-							/* query currently drawn glyph information */
-							stbtt_GetCodepointHMetrics(fontInfo, unicode.get(0), advance, null);
-							textWidth += advance.get(0) * scale;
-
-							/* offset next glyph */
-							glyphLen = nnk_utf_decode(text + textLen, memAddress(unicode), len - textLen);
-							textLen += glyphLen;
-						}
-					}
-					return textWidth;
-				})
-				.height(FONT_HEIGHT)
-				.query((handle, fontHeight, glyph, codepoint, nextCodepoint) -> {
-					try(MemoryStack stack = stackPush()) {
-						FloatBuffer x = stack.floats(0.0f);
-						FloatBuffer y = stack.floats(0.0f);
-
-						STBTTAlignedQuad q = STBTTAlignedQuad.malloc(stack);
-						IntBuffer advance = stack.mallocInt(1);
-
-						stbtt_GetPackedQuad(cdata, BITMAP_W, BITMAP_H, codepoint - 32, x, y, q, false);
-						stbtt_GetCodepointHMetrics(fontInfo, codepoint, advance, null);
-
-						NkUserFontGlyph ufg = NkUserFontGlyph.create(glyph);
-
-						ufg.width(q.x1() - q.x0());
-						ufg.height(q.y1() - q.y0());
-						ufg.offset().set(q.x0(), q.y0() + (FONT_HEIGHT + descent));
-						ufg.xadvance(advance.get(0) * scale);
-						ufg.uv(0).set(q.s0(), q.t0());
-						ufg.uv(1).set(q.s1(), q.t1());
-					}
-				})
-				.texture(it -> it.id(fontTexID));
-
-		nk_style_set_font(ctx, defaultFont);
+		setupFont();
 
 		glfwShowWindow(windowId);
 		glfwMaximizeWindow(windowId);
@@ -569,6 +430,52 @@ public class Orbital2Main {
 		glDisable(GL_SCISSOR_TEST);
 	}
 
+	private static Callback glSetup() {
+		GLFWErrorCallback.createPrint().set();
+		if(!glfwInit()) {
+			throw new IllegalStateException("Unable to initialize glfw");
+		}
+
+		glfwDefaultWindowHints();
+		glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+		glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+		glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+		glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+		if(Platform.get() == Platform.MACOSX) {
+			glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GLFW_TRUE);
+		}
+
+		if(debug) {
+			glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
+		}
+
+		windowId = glfwCreateWindow(640, 640, "Orbital", NULL, NULL);
+		if(windowId == NULL) {
+			throw new RuntimeException("Failed to create the GLFW window");
+		}
+
+		glfwMakeContextCurrent(windowId);
+		glfwSwapInterval(1);
+		GLCapabilities caps = GL.createCapabilities();
+		Callback debugProc = GLUtil.setupDebugMessageCallback();
+
+		if(caps.OpenGL43) {
+			GL43.glDebugMessageControl(GL43.GL_DEBUG_SOURCE_API, GL43.GL_DEBUG_TYPE_OTHER, GL43.GL_DEBUG_SEVERITY_NOTIFICATION, (IntBuffer) null, false);
+		} else if(caps.GL_KHR_debug) {
+			KHRDebug.glDebugMessageControl(
+					KHRDebug.GL_DEBUG_SOURCE_API,
+					KHRDebug.GL_DEBUG_TYPE_OTHER,
+					KHRDebug.GL_DEBUG_SEVERITY_NOTIFICATION,
+					(IntBuffer) null,
+					false
+			);
+		} else if(caps.GL_ARB_debug_output) {
+			glDebugMessageControlARB(GL_DEBUG_SOURCE_API_ARB, GL_DEBUG_TYPE_OTHER_ARB, GL_DEBUG_SEVERITY_LOW_ARB, (IntBuffer) null, false);
+		}
+
+		return debugProc;
+	}
+
 	private static void destroy() {
 		glDetachShader(shaderProgram, vertexShader);
 		glDetachShader(shaderProgram, fragmentShader);
@@ -666,5 +573,107 @@ public class Orbital2Main {
 			};
 			nk_input_button(ctx, nkButton, x, y, action == GLFW_PRESS);
 		}
+	}
+
+	private static void setupFont() {
+		final int BITMAP_W = 1024;
+		final int BITMAP_H = 1024;
+
+		final int FONT_HEIGHT = 18;
+		int fontTexID = glGenTextures();
+
+		STBTTFontinfo fontInfo = STBTTFontinfo.create();
+		STBTTPackedchar.Buffer cdata = STBTTPackedchar.create(95);
+
+		float scale;
+		float descent;
+
+		try(MemoryStack stack = stackPush()) {
+			stbtt_InitFont(fontInfo, font);
+			scale = stbtt_ScaleForPixelHeight(fontInfo, FONT_HEIGHT);
+
+			IntBuffer d = stack.mallocInt(1);
+			stbtt_GetFontVMetrics(fontInfo, null, d, null);
+			descent = d.get(0) * scale;
+
+			ByteBuffer bitmap = memAlloc(BITMAP_W * BITMAP_H);
+
+			STBTTPackContext pc = STBTTPackContext.malloc(stack);
+			stbtt_PackBegin(pc, bitmap, BITMAP_W, BITMAP_H, 0, 1, NULL);
+			stbtt_PackSetOversampling(pc, 4, 4);
+			stbtt_PackFontRange(pc, font, 0, FONT_HEIGHT, 32, cdata);
+			stbtt_PackEnd(pc);
+
+			// Convert R8 to RGBA8
+			ByteBuffer texture = memAlloc(BITMAP_W * BITMAP_H * 4);
+			for(int i = 0; i < bitmap.capacity(); i++) {
+				texture.putInt((bitmap.get(i) << 24) | 0x00FFFFFF);
+			}
+			texture.flip();
+
+			glBindTexture(GL_TEXTURE_2D, fontTexID);
+			glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, BITMAP_W, BITMAP_H, 0, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, texture);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+			memFree(texture);
+			memFree(bitmap);
+		}
+
+		defaultFont
+				.width((handle, h, text, len) -> {
+					float textWidth = 0;
+					try(MemoryStack stack = stackPush()) {
+						IntBuffer unicode = stack.mallocInt(1);
+
+						int glyphLen = nnk_utf_decode(text, memAddress(unicode), len);
+						int textLen = glyphLen;
+
+						if(glyphLen == 0) {
+							return 0;
+						}
+
+						IntBuffer advance = stack.mallocInt(1);
+						while(textLen <= len && glyphLen != 0) {
+							if(unicode.get(0) == NK_UTF_INVALID) {
+								break;
+							}
+
+							/* query currently drawn glyph information */
+							stbtt_GetCodepointHMetrics(fontInfo, unicode.get(0), advance, null);
+							textWidth += advance.get(0) * scale;
+
+							/* offset next glyph */
+							glyphLen = nnk_utf_decode(text + textLen, memAddress(unicode), len - textLen);
+							textLen += glyphLen;
+						}
+					}
+					return textWidth;
+				})
+				.height(FONT_HEIGHT)
+				.query((handle, fontHeight, glyph, codepoint, nextCodepoint) -> {
+					try(MemoryStack stack = stackPush()) {
+						FloatBuffer x = stack.floats(0.0f);
+						FloatBuffer y = stack.floats(0.0f);
+
+						STBTTAlignedQuad q = STBTTAlignedQuad.malloc(stack);
+						IntBuffer advance = stack.mallocInt(1);
+
+						stbtt_GetPackedQuad(cdata, BITMAP_W, BITMAP_H, codepoint - 32, x, y, q, false);
+						stbtt_GetCodepointHMetrics(fontInfo, codepoint, advance, null);
+
+						NkUserFontGlyph ufg = NkUserFontGlyph.create(glyph);
+
+						ufg.width(q.x1() - q.x0());
+						ufg.height(q.y1() - q.y0());
+						ufg.offset().set(q.x0(), q.y0() + (FONT_HEIGHT + descent));
+						ufg.xadvance(advance.get(0) * scale);
+						ufg.uv(0).set(q.s0(), q.t0());
+						ufg.uv(1).set(q.s1(), q.t1());
+					}
+				})
+				.texture(it -> it.id(fontTexID));
+
+		nk_style_set_font(ctx, defaultFont);
 	}
 }

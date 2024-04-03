@@ -12,6 +12,10 @@ import java.util.Objects;
 import static org.lwjgl.nuklear.Nuklear.*;
 
 public class DraggyCircleWindow extends Window {
+
+	private static final int CIRCLE_DIAMETER = 40;
+	private static final int CIRCLE_RADIUS = CIRCLE_DIAMETER / 2;
+
 	public DraggyCircleWindow() {
 		super("Draggy Circle");
 	}
@@ -36,56 +40,33 @@ public class DraggyCircleWindow extends Window {
 		//if mouse is down, move the circle to the mouse position
 		if (nk_input_is_mouse_down(ctx.input(), NK_BUTTON_LEFT) && nk_input_has_mouse_click_in_rect(ctx.input(), NK_BUTTON_LEFT, space)) {
 			NkVec2 mouse = ctx.input().mouse().pos();
-			velocity.x(mouse.x() - 20 - ballX);
-			velocity.y(mouse.y() - 20 - ballY);
+			velocity.x(mouse.x() - CIRCLE_RADIUS - ballX);
+			velocity.y(mouse.y() - CIRCLE_RADIUS - ballY);
 		} else {
 			//slow down
 			velocity.x(velocity.x() * 0.995f);
 			velocity.y(velocity.y() * 0.995f);
 		}
 
-		int oldX = ballX, oldY = ballY;
 		ballX += (int) velocity.x() / 10;
 		ballY += (int) velocity.y() / 10;
-		keepInsideWindow();
-		if(oldX == ballX)
-			velocity.x(0);
-		if(oldY == ballY)
-			velocity.y(0);
+		keepInside(space);
 
-		nk_fill_circle(canvas, nk_rect(ballX, ballY, 40, 40, space), nk_rgb(50, 50, 220, NkColor.malloc(stack)));
+		nk_fill_circle(canvas, nk_rect(ballX, ballY, CIRCLE_DIAMETER, CIRCLE_DIAMETER, space), nk_rgb(50, 50, 220, NkColor.malloc(stack)));
 	}
 
-	private void keepInsideWindow() {
+	private void keepInside(NkRect space) {
 		int oldX = ballX, oldY = ballY;
-		ballX = Math.max(this.x + 6, ballX);
-		ballX = Math.min(this.x + width - 58, ballX);
+		ballX = (int) Math.max(space.x(), ballX);
+		ballX = (int) Math.min(space.x() + space.w() - CIRCLE_DIAMETER, ballX);
 		if(ballX != oldX) {
-			boolean windowChanged = this.oldWidth != this.width || this.oldX != this.x;
-			if(windowChanged) {
-				float diff = (float) (this.width - this.oldWidth);
-				if(diff == 0) {
-					diff = this.x - this.oldX;
-				}
-				velocity.x(velocity.x() + diff);
-			} else {
-				velocity.x(-velocity.x());
-			}
+			velocity.x(-velocity.x());
 		}
 
-		ballY = Math.max(this.y + 40, ballY);
-		ballY = Math.min(this.y + height - 60, ballY);
+		ballY = (int) Math.max(space.y(), ballY);
+		ballY = (int) Math.min(space.y() + space.h() - CIRCLE_DIAMETER, ballY);
 		if(ballY != oldY) {
-			boolean windowChanged = this.oldHeight != this.height || this.oldY != this.y;
-			if(windowChanged) {
-				float diff = (float) (this.height - this.oldHeight);
-				if(diff == 0) {
-					diff = this.y - this.oldY;
-				}
-				velocity.y(velocity.y() + diff);
-			} else {
-				velocity.y(-velocity.y());
-			}
+			velocity.y(-velocity.y());
 		}
 	}
 }
