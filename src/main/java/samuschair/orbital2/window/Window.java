@@ -55,17 +55,20 @@ public abstract class Window {
 	public void layout(NkContext ctx, int x, int y) {
 		try (MemoryStack stack = MemoryStack.stackPush()) {
 			preRender(ctx, stack);
-			if (nk_begin(ctx, title, nk_rect(x, y, width, height, NkRect.malloc(stack)), flags)) {
-				NkRect bounds = NkRect.malloc(stack);
-				nk_window_get_bounds(ctx, bounds);
-				this.x = (int) bounds.x();
-				this.y = (int) bounds.y();
-				this.width = (int) nk_window_get_width(ctx);
-				this.height = (int) nk_window_get_height(ctx);
+			NkRect bounds = NkRect.malloc(stack);
+			if (nk_begin(ctx, title, nk_rect(x, y, width, height, bounds), flags)) {
+				updatePosition(ctx, bounds);
 				render(ctx, stack);
 			}
 			nk_end(ctx);
 		}
+	}
+
+	protected void updatePosition(NkContext ctx, NkRect bounds) {
+		this.x = (int) bounds.x();
+		this.y = (int) bounds.y();
+		this.width = (int) nk_window_get_width(ctx);
+		this.height = (int) nk_window_get_height(ctx);
 	}
 
 	/**

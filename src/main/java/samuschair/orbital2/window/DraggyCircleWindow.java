@@ -38,12 +38,12 @@ public class DraggyCircleWindow extends Window {
 			NkVec2 mouse = ctx.input().mouse().pos();
 			ballX = (int) (mouse.x() - 20);
 			ballY = (int) (mouse.y() - 20);
+			mouse.free();
 		}
-//		System.out.printf("(%d, %d)\n", ballX, ballY);
-		ballX = Math.max(this.x + 5, ballX);
+		ballX = Math.max(this.x + 6, ballX);
 		ballY = Math.max(this.y + 40, ballY);
 		ballX = Math.min(this.x + width - 58, ballX);
-		ballY = Math.min(this.y + height - 58, ballY);
+		ballY = Math.min(this.y + height - 60, ballY);
 
 		nk_fill_circle(canvas, nk_rect(ballX, ballY, 40, 40, space), nk_rgb(50, 50, 220, NkColor.malloc(stack)));
 	}
