@@ -13,6 +13,7 @@ import org.lwjgl.stb.STBTTPackContext;
 import org.lwjgl.stb.STBTTPackedchar;
 import org.lwjgl.system.Callback;
 import org.lwjgl.system.MemoryStack;
+import org.lwjgl.system.NativeResource;
 import org.lwjgl.system.Platform;
 import samuschair.orbital2.window.DemoWindow;
 import samuschair.orbital2.window.DraggyCircleWindow;
@@ -25,6 +26,7 @@ import java.nio.DoubleBuffer;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.util.Objects;
+import java.util.function.Supplier;
 
 import static org.lwjgl.glfw.Callbacks.*;
 import static org.lwjgl.glfw.GLFW.*;
@@ -40,7 +42,7 @@ import static samuschair.orbital2.util.IOUtil.ioResourceToByteBuffer;
 public class Orbital2Main {
 
 	// region Main setup and constants
-	public static final boolean isRunningInIDE;
+	public static final boolean debug;
 
 	private static final int BUFFER_INITIAL_SIZE = 4 * 1024;
 
@@ -52,15 +54,10 @@ public class Orbital2Main {
 	private static final NkDrawVertexLayoutElement.Buffer VERTEX_LAYOUT;
 
 	static {
-		@SuppressWarnings("DataFlowIssue") // the class file is guaranteed to exist
-		String resource = Orbital2Main.class.getResource("Orbital2Main.class").toString();
+		debug = System.getProperty("orbital.debug", "not true").equalsIgnoreCase("true");
 
-		// If we are in a jar (in production), the resource will be a jar:file:... URL
-		// If we are in an IDE, the resource will be in the build/classes/... directory
-		isRunningInIDE = !resource.startsWith("jar:");
-
-		if(isRunningInIDE) {
-			System.out.println("Running in IDE");
+		if(debug) {
+			System.out.println("Debug mode enabled");
 			System.setProperty("org.lwjgl.util.Debug", "true");
 		}
 
@@ -111,7 +108,6 @@ public class Orbital2Main {
 	private static int uniformProjectionMatrix;
 	// endregion
 
-	// region Windows
 	private static final Window[] windows = {
 			new DemoWindow(),
 			new SpinnyCircleWindow(),
@@ -133,7 +129,7 @@ public class Orbital2Main {
 			glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GLFW_TRUE);
 		}
 
-		if(isRunningInIDE) {
+		if(debug) {
 			glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GLFW_TRUE);
 		}
 
@@ -589,15 +585,20 @@ public class Orbital2Main {
 	}
 
 	private static void shutdown() {
-		Objects.requireNonNull(ctx.clip().copy()).free();
-		Objects.requireNonNull(ctx.clip().paste()).free();
+		free(ctx.clip()::copy);
+		free(ctx.clip()::paste);
 		nk_free(ctx);
 		destroy();
-		Objects.requireNonNull(defaultFont.query()).free();
-		Objects.requireNonNull(defaultFont.width()).free();
 
-		Objects.requireNonNull(ALLOCATOR.alloc()).free();
-		Objects.requireNonNull(ALLOCATOR.mfree()).free();
+		free(defaultFont::query);
+		free(defaultFont::width);
+
+		free(ALLOCATOR::alloc);
+		free(ALLOCATOR::mfree);
+	}
+
+	private static void free(Supplier<NativeResource> resource) {
+		Objects.requireNonNull(resource.get()).free();
 	}
 
 	private static void translateSpecialKeyPress(long window, int key, int scancode, int action, int mods) {

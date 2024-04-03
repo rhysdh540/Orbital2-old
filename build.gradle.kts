@@ -1,7 +1,9 @@
+import edu.sc.seis.macAppBundle.MacAppBundlePluginExtension
+
 plugins {
     java
     idea
-    id("edu.sc.seis.macAppBundle") version "2.3.1"
+    id("edu.sc.seis.macAppBundle") version "2.3.1" apply(System.getProperty("os.name").lowercase().contains("mac"))
     id("com.github.johnrengelman.shadow") version "8.1.1"
 }
 
@@ -16,15 +18,19 @@ repositories {
     mavenCentral()
 }
 
-macAppBundle {
-    mainClassName = "samuschair.orbital2.Orbital2Main"
-    javaExtras["-XstartOnFirstThread"] = null
-    runtimeConfigurationName = includeMac.name
-    jreHome = javaToolchains.launcherFor { languageVersion = JavaLanguageVersion.of(17) }.get().executablePath.asFile
-            .parentFile // bin
-            .parentFile // home
-            .toString()
-    bundleIdentifier = "$group.${base.archivesName}"
+val isMac = System.getProperty("os.name").lowercase().contains("mac")
+
+if(isMac) {
+    extensions.getByType<MacAppBundlePluginExtension>().apply {
+        mainClassName = "samuschair.orbital2.Orbital2Main"
+        javaExtras["-XstartOnFirstThread"] = null
+        runtimeConfigurationName = includeMac.name
+        jreHome = javaToolchains.launcherFor { languageVersion = JavaLanguageVersion.of(17) }.get().executablePath.asFile
+                .parentFile // bin
+                .parentFile // home
+                .toString()
+        bundleIdentifier = "$group.${base.archivesName}"
+    }
 }
 
 dependencies {
@@ -90,7 +96,10 @@ tasks.register<JavaExec>("run") {
             tasks.compileJava.get().destinationDirectory,
             tasks.processResources.get().destinationDir
     )
-    jvmArgs = listOf("-XstartOnFirstThread")
+    jvmArgs("-Xmx2G", "-Dorbital.debug=true")
+    if(isMac) {
+        jvmArgs("-XstartOnFirstThread")
+    }
 }
 
 tasks.jar {
