@@ -25,8 +25,8 @@ public class NumberDisplay extends Window {
 	}
 
 	private static void body(Body body, NkContext ctx) {
-		nk_label(ctx, "Acceleration: " + body.acceleration, NK_TEXT_LEFT);
-		nk_label(ctx, "Velocity: " + body.velocity, NK_TEXT_LEFT);
+		nk_label(ctx, "Acceleration: " + body.acceleration.length(), NK_TEXT_LEFT);
+		nk_label(ctx, "Velocity: " + body.velocity.length(), NK_TEXT_LEFT);
 		nk_label(ctx, "Position: " + body.position, NK_TEXT_LEFT);
 	}
 }
