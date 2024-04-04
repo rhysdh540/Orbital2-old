@@ -6,7 +6,6 @@ import org.lwjgl.nuklear.NkContext;
 import org.lwjgl.nuklear.NkRect;
 import org.lwjgl.nuklear.NkVec2;
 import org.lwjgl.system.MemoryStack;
-import samuschair.orbital2.Circle;
 
 import java.util.Objects;
 
@@ -115,5 +114,47 @@ public class BouncyBallsWindow extends Window {
 				}
 			}
 		}
+	}
+}
+
+class Circle {
+
+	// from top left corner of the square
+	public int x, y;
+	public final NkVec2 velocity;
+
+	public final int diameter;
+	public final int radius;
+
+	public Circle(int x, int y, int diameter) {
+		this.x = x;
+		this.y = y;
+		this.velocity = NkVec2.create();
+		this.diameter = diameter;
+		this.radius = diameter / 2;
+	}
+
+	public int cx() {
+		return x + radius;
+	}
+
+	public int cy() {
+		return y + radius;
+	}
+
+	public float vx() {
+		return velocity.x();
+	}
+
+	public float vy() {
+		return velocity.y();
+	}
+
+	public void vx(float vx) {
+		velocity.x(vx);
+	}
+
+	public void vy(float vy) {
+		velocity.y(vy);
 	}
 }

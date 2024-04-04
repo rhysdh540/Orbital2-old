@@ -17,6 +17,7 @@ import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.NativeResource;
 import org.lwjgl.system.Platform;
 import samuschair.orbital2.window.BouncyBallsWindow;
+import samuschair.orbital2.window.SingleDimensionBoxCollisionsWindow;
 import samuschair.orbital2.window.Window;
 
 import java.io.IOException;
@@ -121,7 +122,8 @@ public class Orbital2Main {
 	// endregion
 
 	private static final Window[] windows = {
-			new BouncyBallsWindow(),
+			new SingleDimensionBoxCollisionsWindow(),
+//			new BouncyBallsWindow(),
 //			new DemoWindow(),
 //			new SpinnyCircleWindow(),
 	};
