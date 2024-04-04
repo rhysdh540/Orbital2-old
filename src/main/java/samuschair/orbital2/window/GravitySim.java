@@ -23,6 +23,7 @@ public class GravitySim extends Window {
 	final Body inner = new Body(10000, 50);
 
 	private static final double G = 0.05;
+	private static final double ENERGY_LOST_ON_COLLISION = 0.95;
 
 	@Override
 	protected void render(NkContext ctx, MemoryStack stack) {
@@ -37,8 +38,8 @@ public class GravitySim extends Window {
 
 		if(timeControls.isRunning()) {
 			moveBodies();
-//			keepInside(outer, space);
-//			keepInside(inner, space);
+			keepInside(outer, space);
+			keepInside(inner, space);
 		}
 
 		nk_fill_circle(canvas,
@@ -59,7 +60,7 @@ public class GravitySim extends Window {
 	private void resetPositions() {
 		inner.position.x = (double) width / 2;
 		inner.position.y = (double) height / 2;
-		inner.setVelocity(0, 0);
+		inner.setVelocity(0, -0.005);
 		inner.setAcceleration(0, 0);
 
 		outer.position.x = inner.position.x + 400;
@@ -88,18 +89,18 @@ public class GravitySim extends Window {
 		outer.position.add(outer.velocity.x * timescale, outer.velocity.y * timescale);
 	}
 
-	private static void keepInside(Body circle, NkRect space) {
-		double oldX = circle.position.x, oldY = circle.position.y;
-		circle.position.x = Math.max(space.x(), circle.position.x);
-		circle.position.x =  Math.min(space.x() + space.w() - circle.getRadius(), circle.position.x);
-		if(circle.position.x != oldX) {
-			circle.velocity.x = -circle.velocity.x;
+	private static void keepInside(Body body, NkRect space) {
+		double oldX = body.position.x, oldY = body.position.y;
+		body.position.x = Math.max(space.x() + body.getRadius(), body.position.x);
+		body.position.x =  Math.min(space.x() + space.w() - body.getRadius(), body.position.x);
+		if(body.position.x != oldX) {
+			body.velocity.mul(-ENERGY_LOST_ON_COLLISION, 1);
 		}
 
-		circle.velocity.y = (int) Math.max(space.y(), circle.velocity.y);
-		circle.velocity.y = (int) Math.min(space.y() + space.h() - circle.getRadius(), circle.position.y);
-		if(circle.velocity.y != oldY) {
-			circle.velocity.y = -circle.velocity.y;
+		body.position.y = Math.max(space.y() + body.getRadius(), body.position.y);
+		body.position.y = Math.min(space.y() + space.h() - body.getRadius(), body.position.y);
+		if(body.position.y != oldY) {
+			body.velocity.mul(1, -ENERGY_LOST_ON_COLLISION);
 		}
 	}
 }

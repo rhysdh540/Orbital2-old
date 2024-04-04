@@ -21,17 +21,21 @@ public class TimeControls extends Window {
 	@Getter
 	private float timescale = 1;
 
+	private boolean started = false;
+
 	private final List<Runnable> onReset = new ArrayList<>();
 
 	@Override
 	protected void render(NkContext ctx, MemoryStack stack) {
 		nk_layout_row_dynamic(ctx, 30, 2);
-		if(nk_button_label(ctx, running ? "Stop" : "Start")) {
+		if(nk_button_label(ctx, !started ? "Start" : running ? "Pause" : "Resume")) {
 			running = !running;
+			started = true;
 		}
 
 		if(nk_button_label(ctx, "Reset")) {
 			running = false;
+			started = false;
 			timescale = 1;
 			onReset.forEach(Runnable::run);
 		}
