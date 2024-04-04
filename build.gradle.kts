@@ -21,7 +21,7 @@ repositories {
 val isMac = System.getProperty("os.name").lowercase().contains("mac")
 
 if(isMac) {
-    extensions.getByType<MacAppBundlePluginExtension>().apply {
+    the<MacAppBundlePluginExtension>().apply {
         mainClassName = "samuschair.orbital2.Orbital2Main"
         javaExtras["-XstartOnFirstThread"] = null
         runtimeConfigurationName = includeMac.name
@@ -37,10 +37,13 @@ dependencies {
     // test runtime dependency on the old version so we can see it but cant reference it
     testRuntimeOnly(files("libs/orbital-old.jar"))
 
-//    shadow(implementation(("org.joml:joml:${"joml_version"()}"))!!)
+    implementation("org.joml:joml:${"joml_version"()}")!!.also {
+        shadow(it)
+    }
+
     compileOnly("com.google.code.findbugs:jsr305:3.0.2")
-    "org.projectlombok:lombok:${"lombok_version"()}".also {
-        compileOnly(it)
+
+    compileOnly("org.projectlombok:lombok:${"lombok_version"()}")!!.also {
         annotationProcessor(it)
     }
 
@@ -54,15 +57,13 @@ dependencies {
         includeMac(it)
     }
 
-    "org.lwjgl:lwjgl".also {
-        implementation(it)
+    implementation("org.lwjgl:lwjgl")!!.also {
         shadow(it)
         includeMac(it)
     }
 
     for(platform in nativesPlatforms) {
-        "org.lwjgl:lwjgl:$lwjglVersion:natives-$platform".also {
-            runtimeOnly(it)
+        runtimeOnly("org.lwjgl:lwjgl:$lwjglVersion:natives-$platform")!!.also {
             shadow(it)
             if(platform.startsWith("macos")) {
                 includeMac(it)
@@ -71,14 +72,12 @@ dependencies {
     }
 
     for(module in modules) {
-        "org.lwjgl:lwjgl-$module".also {
-            implementation(it)
+        implementation("org.lwjgl:lwjgl-$module")!!.also {
             shadow(it)
             includeMac(it)
         }
         for(platform in nativesPlatforms) {
-            "org.lwjgl:lwjgl-$module:$lwjglVersion:natives-$platform".also {
-                runtimeOnly(it)
+            runtimeOnly("org.lwjgl:lwjgl-$module:$lwjglVersion:natives-$platform")!!.also {
                 shadow(it)
                 if(platform.startsWith("macos")) {
                     includeMac(it)

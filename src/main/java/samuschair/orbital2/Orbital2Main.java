@@ -16,8 +16,8 @@ import org.lwjgl.system.Configuration;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.NativeResource;
 import org.lwjgl.system.Platform;
-import samuschair.orbital2.window.BouncyBallsWindow;
-import samuschair.orbital2.window.SingleDimensionBoxCollisionsWindow;
+import samuschair.orbital2.window.GravitySim;
+import samuschair.orbital2.window.NumberDisplay;
 import samuschair.orbital2.window.Window;
 
 import java.io.IOException;
@@ -25,6 +25,8 @@ import java.nio.ByteBuffer;
 import java.nio.DoubleBuffer;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.function.Supplier;
 
@@ -121,12 +123,17 @@ public class Orbital2Main {
 	private static int uniformProjectionMatrix;
 	// endregion
 
-	private static final Window[] windows = {
-			new SingleDimensionBoxCollisionsWindow(),
-//			new BouncyBallsWindow(),
-//			new DemoWindow(),
-//			new SpinnyCircleWindow(),
-	};
+	private static final List<Window> windows = new ArrayList<>();
+	static {
+		GravitySim sim = new GravitySim();
+		windows.add(sim);
+		windows.add(sim.timeControls);
+		windows.add(new NumberDisplay(sim));
+	}
+
+	public static void addWindow(Window window) {
+		windows.add(window);
+	}
 
 	public static void main(String[] args) {
 		Callback debugProc = glSetup();

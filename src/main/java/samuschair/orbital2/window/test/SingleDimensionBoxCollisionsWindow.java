@@ -1,4 +1,4 @@
-package samuschair.orbital2.window;
+package samuschair.orbital2.window.test;
 
 import lombok.AccessLevel;
 import lombok.Setter;
@@ -9,6 +9,7 @@ import org.lwjgl.nuklear.NkPluginFilter;
 import org.lwjgl.nuklear.NkRect;
 import org.lwjgl.nuklear.Nuklear;
 import org.lwjgl.system.MemoryStack;
+import samuschair.orbital2.window.Window;
 
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
@@ -33,7 +34,7 @@ public class SingleDimensionBoxCollisionsWindow extends Window {
 	@Setter(AccessLevel.PRIVATE)
 	private float velocity1 = INVALID, velocity2 = INVALID;
 
-	private int position1 = 0, position2 = 100;
+	private float position1 = 0, position2 = 100;
 
 	private boolean running = false;
 
@@ -129,10 +130,10 @@ public class SingleDimensionBoxCollisionsWindow extends Window {
 	}
 
 	private static void numField(NkContext ctx, MemoryStack stack, String label, int value, Consumer<Float> setter) {
-		ByteBuffer buffer = stack.calloc(5);
+		ByteBuffer buffer = stack.calloc(Integer.SIZE);
 		IntBuffer length = stack.ints(memASCII(valueOf(value), false, buffer));
 		nk_label(ctx, label, NK_TEXT_ALIGN_LEFT);
-		nk_edit_string(ctx, NK_EDIT_SIMPLE, buffer, length, 5, filter);
+		nk_edit_string(ctx, NK_EDIT_SIMPLE, buffer, length, 11, filter);
 		setter.accept(parse(buffer, length));
 	}
 }

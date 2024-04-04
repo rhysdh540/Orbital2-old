@@ -1,4 +1,4 @@
-package samuschair.orbital2.window;
+package samuschair.orbital2.window.test;
 
 import org.lwjgl.BufferUtils;
 import org.lwjgl.nuklear.NkColor;
@@ -6,6 +6,7 @@ import org.lwjgl.nuklear.NkColorf;
 import org.lwjgl.nuklear.NkContext;
 import org.lwjgl.nuklear.NkVec2;
 import org.lwjgl.system.MemoryStack;
+import samuschair.orbital2.window.Window;
 
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;

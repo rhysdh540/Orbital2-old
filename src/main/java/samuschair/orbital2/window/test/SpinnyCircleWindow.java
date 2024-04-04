@@ -1,10 +1,11 @@
-package samuschair.orbital2.window;
+package samuschair.orbital2.window.test;
 
 import org.lwjgl.nuklear.NkColor;
 import org.lwjgl.nuklear.NkCommandBuffer;
 import org.lwjgl.nuklear.NkContext;
 import org.lwjgl.nuklear.NkRect;
 import org.lwjgl.system.MemoryStack;
+import samuschair.orbital2.window.Window;
 
 import java.util.Objects;
 
