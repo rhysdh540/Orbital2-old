@@ -1,10 +1,19 @@
-import edu.sc.seis.macAppBundle.MacAppBundlePluginExtension
+import groovy.json.*
+import org.objectweb.asm.*
+import org.objectweb.asm.tree.*
+import java.util.jar.*
+import java.util.zip.Deflater
 
 plugins {
     java
     idea
     id("edu.sc.seis.macAppBundle") version "2.3.1" apply(System.getProperty("os.name").lowercase().contains("mac"))
     id("com.github.johnrengelman.shadow") version "8.1.1"
+}
+
+buildscript {
+    repositories.maven("https://oss.sonatype.org/content/repositories/releases")
+    dependencies.classpath("org.ow2.asm:asm-tree:9.7")
 }
 
 group = "maven_group"()
@@ -21,7 +30,7 @@ repositories {
 val isMac = System.getProperty("os.name").lowercase().contains("mac")
 
 if(isMac) {
-    the<MacAppBundlePluginExtension>().apply {
+    the<edu.sc.seis.macAppBundle.MacAppBundlePluginExtension>().apply {
         mainClassName = "samuschair.orbital2.Orbital2Main"
         javaExtras["-XstartOnFirstThread"] = null
         runtimeConfigurationName = includeMac.name
@@ -114,6 +123,52 @@ tasks.shadowJar {
     }
 
     archiveClassifier = "all"
+
+    doLast {
+        val jar = archiveFile.get().asFile
+        val contents = linkedMapOf<String, ByteArray>()
+        JarFile(jar).use {
+            it.entries().asIterator().forEach { entry ->
+                if (!entry.isDirectory) {
+                    contents[entry.name] = it.getInputStream(entry).readAllBytes()
+                }
+            }
+        }
+
+        jar.delete()
+
+        JarOutputStream(jar.outputStream()).use { out ->
+            out.setLevel(Deflater.BEST_COMPRESSION)
+            contents.forEach { var (name, bytes) = it
+                if (name.endsWith(".json")) {
+                    bytes = JsonOutput.toJson(JsonSlurper().parse(bytes)).toByteArray()
+                }
+
+                if (name.endsWith(".class")) {
+                    val reader = ClassReader(bytes)
+                    val node = ClassNode()
+                    reader.accept(node, 0)
+
+                    node.methods.forEach { method ->
+                        method.localVariables?.clear()
+                    }
+                    if ("strip_source_files"().toBoolean()) {
+                        node.sourceFile = null
+                    }
+
+                    val writer = ClassWriter(0)
+                    node.accept(writer)
+                    bytes = writer.toByteArray()
+                }
+
+                out.putNextEntry(JarEntry(name))
+                out.write(bytes)
+                out.closeEntry()
+            }
+            out.finish()
+            out.close()
+        }
+    }
 }
 
 tasks.assemble {
