@@ -28,14 +28,6 @@ public class Body {
 				.a(1);
 	}
 
-	public void setVelocity(double x, double y) {
-		velocity.set(x, y);
-	}
-
-	public void setAcceleration(double x, double y) {
-		acceleration.set(x, y);
-	}
-
 	public int getDiameter() {
 		return radius * 2;
 	}

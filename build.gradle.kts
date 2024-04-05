@@ -97,7 +97,7 @@ dependencies {
 }
 
 tasks.register<JavaExec>("run") {
-    dependsOn(tasks.jar)
+    dependsOn(tasks.compileJava, tasks.processResources)
     mainClass = "samuschair.orbital2.Orbital2Main"
     classpath(
             configurations.runtimeClasspath.get(),
@@ -151,6 +151,7 @@ tasks.shadowJar {
 
                     node.methods.forEach { method ->
                         method.localVariables?.clear()
+                        method.parameters?.clear()
                     }
                     if ("strip_source_files"().toBoolean()) {
                         node.sourceFile = null

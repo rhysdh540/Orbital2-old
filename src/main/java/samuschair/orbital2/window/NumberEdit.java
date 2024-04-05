@@ -43,6 +43,11 @@ public class NumberEdit extends Window {
 		sim.inner.radius = editInt(ctx, stack, sim.inner.radius);
 		nk_label(ctx, "Color", NK_TEXT_LEFT);
 		editColor(ctx, stack, sim.inner.color);
+
+		nk_layout_row_dynamic(ctx, 30, 1);
+		nk_label(ctx, "Walls", NK_TEXT_ALIGN_CENTERED | NK_TEXT_ALIGN_TOP);
+		nk_layout_row_dynamic(ctx, 30, 1);
+		sim.walls = !nk_check_text(ctx, "Enable", !sim.walls);
 	}
 
 	@SuppressWarnings("DuplicatedCode")

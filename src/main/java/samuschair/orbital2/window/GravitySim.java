@@ -1,5 +1,6 @@
 package samuschair.orbital2.window;
 
+import org.joml.Vector2d;
 import org.lwjgl.nuklear.NkColor;
 import org.lwjgl.nuklear.NkCommandBuffer;
 import org.lwjgl.nuklear.NkContext;
@@ -22,8 +23,11 @@ public class GravitySim extends Window {
 	final Body outer = new Body(100, 10, 35, 87, 219);
 	final Body inner = new Body(10000, 50, 255, 255, 240);
 
+	boolean walls = true;
+
 	private static final double G = 5e-2;
 	private static final double ENERGY_KEPT_ON_COLLISION = 0.95;
+	private static final int TIMESCALE_PRECISION = 10;
 
 	@Override
 	protected void render(NkContext ctx, MemoryStack stack) {
@@ -34,12 +38,16 @@ public class GravitySim extends Window {
 		NkRect space = nk_window_get_bounds(ctx, NkRect.malloc(stack));
 
 		nk_widget(space, ctx);
-		nk_stroke_rect(canvas, space, 0, 1, nk_rgb(255, 255, 255, NkColor.malloc(stack)));
+		if(walls) {
+			nk_stroke_rect(canvas, space, 0, 1, nk_rgb(255, 255, 255, NkColor.malloc(stack)));
+		}
 
 		if(timeControls.isRunning()) {
 			moveBodies();
-			keepInside(outer, space);
-			keepInside(inner, space);
+			if(walls) {
+				keepInside(outer, space);
+				keepInside(inner, space);
+			}
 		}
 
 		nk_fill_circle(canvas,
@@ -60,34 +68,35 @@ public class GravitySim extends Window {
 	private void resetPositions() {
 		inner.position.x = (double) width / 2;
 		inner.position.y = (double) height / 2;
-		inner.setVelocity(0, -0.005);
-		inner.setAcceleration(0, 0);
+		inner.velocity.set(0, -0.005);
 
 		outer.position.x = inner.position.x + 400;
 		outer.position.y = inner.position.y;
-		outer.setAcceleration(0, 0);
 
-		outer.setVelocity(0, Math.sqrt(G * inner.mass / outer.position.distance(inner.position)));
+		outer.velocity.set(0, Math.sqrt(G * inner.mass / outer.position.distance(inner.position)));
 	}
 
 	private void moveBodies() {
-		double timescale = timeControls.getTimescale();
-		double f = G * (outer.mass * inner.mass) / Math.pow(outer.position.distance(inner.position), 2);
+		int timescale = (int) (timeControls.getTimescale() * TIMESCALE_PRECISION);
+		for(int i = 0; i < timescale; i++) {
+			double f = G * (outer.mass * inner.mass) / Math.pow(outer.position.distance(inner.position), 2);
 
-		double a1 = f / inner.mass;
-		double a2 = f / outer.mass;
+			double a1 = f / inner.mass;
+			double a2 = f / outer.mass;
 
-		double angle = Math.atan2(inner.position.y - outer.position.y, inner.position.x - outer.position.x);
-		double cos = Math.cos(angle);
-		double sin = Math.sin(angle);
-		inner.acceleration.set(-(a1 * cos), -(a1 * sin));
-		outer.acceleration.set(a2 * cos, a2 * sin);
+			double angle = Math.atan2(inner.position.y - outer.position.y, inner.position.x - outer.position.x);
+			double cos = Math.cos(angle);
+			double sin = Math.sin(angle);
 
-		inner.velocity.add(inner.acceleration.x * timescale, inner.acceleration.y * timescale);
-		outer.velocity.add(outer.acceleration.x * timescale, outer.acceleration.y * timescale);
+			inner.acceleration.set(-(a1 * cos), -(a1 * sin)).div(TIMESCALE_PRECISION);
+			outer.acceleration.set(a2 * cos, a2 * sin).div(TIMESCALE_PRECISION);
 
-		inner.position.add(inner.velocity.x * timescale, inner.velocity.y * timescale);
-		outer.position.add(outer.velocity.x * timescale, outer.velocity.y * timescale);
+			inner.velocity.add(inner.acceleration);
+			outer.velocity.add(outer.acceleration);
+
+			inner.position.add(inner.velocity.div(TIMESCALE_PRECISION, new Vector2d()));
+			outer.position.add(outer.velocity.div(TIMESCALE_PRECISION, new Vector2d()));
+		}
 	}
 
 	private static void keepInside(Body body, NkRect space) {
