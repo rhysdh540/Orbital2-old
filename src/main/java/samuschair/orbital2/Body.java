@@ -1,29 +1,31 @@
 package samuschair.orbital2;
 
-import lombok.Getter;
-import lombok.Setter;
 import org.joml.Vector2d;
+import org.lwjgl.nuklear.NkColorf;
 
 public class Body {
 
-	@Getter
-	@Setter
-	private int mass;
+	public int mass;
 
-	@Getter
-	@Setter
-	private int radius;
+	public int radius;
 
 	public final Vector2d position;
 	public final Vector2d velocity;
 	public final Vector2d acceleration;
 
-	public Body(int mass, int radius) {
+	public final NkColorf color;
+
+	public Body(int mass, int radius, int r, int g, int b) {
 		this.mass = mass;
 		this.radius = radius;
 		this.position = new Vector2d();
 		this.velocity = new Vector2d();
 		this.acceleration = new Vector2d();
+		this.color = NkColorf.create()
+				.r((float) r / 255)
+				.g((float) g / 255)
+				.b((float) b / 255)
+				.a(1);
 	}
 
 	public void setVelocity(double x, double y) {
@@ -32,14 +34,6 @@ public class Body {
 
 	public void setAcceleration(double x, double y) {
 		acceleration.set(x, y);
-	}
-
-	public void setPos(int x, int y) {
-		position.set(x, y);
-	}
-
-	public void setPos(double x, double y) {
-		position.set(x, y);
 	}
 
 	public int getDiameter() {

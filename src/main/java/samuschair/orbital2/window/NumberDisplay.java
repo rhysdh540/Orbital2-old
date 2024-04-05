@@ -8,7 +8,7 @@ import static org.lwjgl.nuklear.Nuklear.*;
 
 public class NumberDisplay extends Window {
 	public NumberDisplay(GravitySim sim) {
-		super("Numbers", 300, 325);
+		super("Numbers", 300, 400, FLAGS_NO_RESIZE);
 		this.sim = sim;
 	}
 
@@ -17,9 +17,11 @@ public class NumberDisplay extends Window {
 	@Override
 	protected void render(NkContext ctx, MemoryStack stack) {
 		nk_layout_row_dynamic(ctx, 30, 1);
-		body(sim.outer, ctx);
-		nk_label(ctx, "Inner:", NK_TEXT_LEFT);
+		nk_label(ctx, "Inner Body", NK_TEXT_ALIGN_CENTERED | NK_TEXT_ALIGN_TOP);
 		body(sim.inner, ctx);
+		nk_label(ctx, "", 0);
+		nk_label(ctx, "Outer Body", NK_TEXT_ALIGN_CENTERED | NK_TEXT_ALIGN_TOP);
+		body(sim.outer, ctx);
 
 		nk_label(ctx, "Distance: " + sim.inner.position.distance(sim.outer.position), NK_TEXT_LEFT);
 	}

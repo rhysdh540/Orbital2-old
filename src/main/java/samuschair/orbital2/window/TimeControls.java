@@ -12,7 +12,7 @@ import static org.lwjgl.nuklear.Nuklear.*;
 
 public class TimeControls extends Window {
 	public TimeControls() {
-		super("Time", 200, 160);
+		super("Time", 300, 160, FLAGS_NO_RESIZE);
 	}
 
 	@Getter
@@ -42,7 +42,7 @@ public class TimeControls extends Window {
 
 		FloatBuffer buf = stack.floats(timescale);
 		nk_layout_row_dynamic(ctx, 30, 1);
-		nk_label(ctx, "Timescale: " + timescale, NK_TEXT_LEFT);
+		nk_label(ctx, "Timescale: " + timescale, NK_TEXT_ALIGN_CENTERED | NK_TEXT_ALIGN_TOP);
 		nk_slider_float(ctx, 0.1f, buf, 10.0f, 0.1f);
 		timescale = round(buf.get(0));
 	}

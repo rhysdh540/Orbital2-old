@@ -1,11 +1,10 @@
 package samuschair.orbital2.window;
 
 import lombok.Getter;
+import org.joml.Vector2i;
 import org.lwjgl.nuklear.NkContext;
-import org.lwjgl.nuklear.NkPluginFilter;
 import org.lwjgl.nuklear.NkRect;
 import org.lwjgl.nuklear.NkWindow;
-import org.lwjgl.nuklear.Nuklear;
 import org.lwjgl.system.MemoryStack;
 
 import java.util.UUID;
@@ -37,12 +36,11 @@ public abstract class Window {
 	protected int oldWidth, oldHeight;
 
 	public static final int DEFAULT_FLAGS = NK_WINDOW_BORDER | NK_WINDOW_MOVABLE | NK_WINDOW_SCALABLE | NK_WINDOW_MINIMIZABLE | NK_WINDOW_TITLE;
+	public static final int FLAGS_NO_RESIZE = NK_WINDOW_BORDER | NK_WINDOW_MOVABLE | NK_WINDOW_MINIMIZABLE | NK_WINDOW_TITLE;
 
 	public Window(String title) {
 		this(title, 230, 250);
 	}
-
-	protected static final NkPluginFilter filter = NkPluginFilter.create(Nuklear::nnk_filter_default);
 
 	public Window(String title, int width, int height) {
 		this(title, width, height, DEFAULT_FLAGS);
@@ -53,6 +51,10 @@ public abstract class Window {
 		this.width = width;
 		this.height = height;
 		this.flags = flags;
+	}
+
+	public void layout(NkContext ctx, Vector2i position) {
+		layout(ctx, position.x, position.y);
 	}
 
 	/**

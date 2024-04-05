@@ -19,11 +19,11 @@ public class GravitySim extends Window {
 	}
 
 	public final TimeControls timeControls = new TimeControls();
-	final Body outer = new Body(100, 10);
-	final Body inner = new Body(10000, 50);
+	final Body outer = new Body(100, 10, 35, 87, 219);
+	final Body inner = new Body(10000, 50, 255, 255, 240);
 
-	private static final double G = 0.05;
-	private static final double ENERGY_LOST_ON_COLLISION = 0.95;
+	private static final double G = 5e-2;
+	private static final double ENERGY_KEPT_ON_COLLISION = 0.95;
 
 	@Override
 	protected void render(NkContext ctx, MemoryStack stack) {
@@ -43,18 +43,18 @@ public class GravitySim extends Window {
 		}
 
 		nk_fill_circle(canvas,
-				nk_rect((float) outer.position.x - outer.getRadius(),
-						(float) outer.position.y - outer.getRadius(),
+				nk_rect((float) outer.position.x - outer.radius,
+						(float) outer.position.y - outer.radius,
 						outer.getDiameter(),
 						outer.getDiameter(), space),
-				nk_rgb(255, 255, 255, NkColor.malloc(stack)));
+				nk_rgb_cf(outer.color, NkColor.malloc(stack)));
 
 		nk_fill_circle(canvas,
-				nk_rect((float) inner.position.x - inner.getRadius(),
-						(float) inner.position.y - inner.getRadius(),
+				nk_rect((float) inner.position.x - inner.radius,
+						(float) inner.position.y - inner.radius,
 						inner.getDiameter(),
 						inner.getDiameter(), space),
-				nk_rgb(0, 255, 255, NkColor.malloc(stack)));
+				nk_rgb_cf(inner.color, NkColor.malloc(stack)));
 	}
 
 	private void resetPositions() {
@@ -66,15 +66,16 @@ public class GravitySim extends Window {
 		outer.position.x = inner.position.x + 400;
 		outer.position.y = inner.position.y;
 		outer.setAcceleration(0, 0);
-		outer.setVelocity(0, 1.125); // TODO: programmatically figure out the correct speed for a circular orbit
+
+		outer.setVelocity(0, Math.sqrt(G * inner.mass / outer.position.distance(inner.position)));
 	}
 
 	private void moveBodies() {
 		double timescale = timeControls.getTimescale();
-		double f = G * (outer.getMass() * inner.getMass()) / Math.pow(outer.position.distance(inner.position), 2);
+		double f = G * (outer.mass * inner.mass) / Math.pow(outer.position.distance(inner.position), 2);
 
-		double a1 = f / inner.getMass();
-		double a2 = f / outer.getMass();
+		double a1 = f / inner.mass;
+		double a2 = f / outer.mass;
 
 		double angle = Math.atan2(inner.position.y - outer.position.y, inner.position.x - outer.position.x);
 		double cos = Math.cos(angle);
@@ -91,16 +92,16 @@ public class GravitySim extends Window {
 
 	private static void keepInside(Body body, NkRect space) {
 		double oldX = body.position.x, oldY = body.position.y;
-		body.position.x = Math.max(space.x() + body.getRadius(), body.position.x);
-		body.position.x =  Math.min(space.x() + space.w() - body.getRadius(), body.position.x);
+		body.position.x = Math.max(space.x() + body.radius, body.position.x);
+		body.position.x =  Math.min(space.x() + space.w() - body.radius, body.position.x);
 		if(body.position.x != oldX) {
-			body.velocity.mul(-ENERGY_LOST_ON_COLLISION, 1);
+			body.velocity.mul(-ENERGY_KEPT_ON_COLLISION, 1);
 		}
 
-		body.position.y = Math.max(space.y() + body.getRadius(), body.position.y);
-		body.position.y = Math.min(space.y() + space.h() - body.getRadius(), body.position.y);
+		body.position.y = Math.max(space.y() + body.radius, body.position.y);
+		body.position.y = Math.min(space.y() + space.h() - body.radius, body.position.y);
 		if(body.position.y != oldY) {
-			body.velocity.mul(1, -ENERGY_LOST_ON_COLLISION);
+			body.velocity.mul(1, -ENERGY_KEPT_ON_COLLISION);
 		}
 	}
 }

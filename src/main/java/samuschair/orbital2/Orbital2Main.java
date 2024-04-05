@@ -1,5 +1,6 @@
 package samuschair.orbital2;
 
+import org.joml.Vector2i;
 import org.lwjgl.glfw.GLFWErrorCallback;
 import org.lwjgl.nuklear.*;
 import org.lwjgl.opengl.GL;
@@ -18,6 +19,7 @@ import org.lwjgl.system.NativeResource;
 import org.lwjgl.system.Platform;
 import samuschair.orbital2.window.GravitySim;
 import samuschair.orbital2.window.NumberDisplay;
+import samuschair.orbital2.window.NumberEdit;
 import samuschair.orbital2.window.Window;
 
 import java.io.IOException;
@@ -25,8 +27,9 @@ import java.nio.ByteBuffer;
 import java.nio.DoubleBuffer;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.function.Supplier;
 
@@ -123,16 +126,13 @@ public class Orbital2Main {
 	private static int uniformProjectionMatrix;
 	// endregion
 
-	private static final List<Window> windows = new ArrayList<>();
+	private static final Map<Window, Vector2i> windows = new LinkedHashMap<>();
 	static {
 		GravitySim sim = new GravitySim();
-		windows.add(sim);
-		windows.add(sim.timeControls);
-		windows.add(new NumberDisplay(sim));
-	}
-
-	public static void addWindow(Window window) {
-		windows.add(window);
+		windows.put(sim, new Vector2i(0, 0));
+		windows.put(new NumberDisplay(sim), new Vector2i(1000, 0));
+		windows.put(new NumberEdit(sim), new Vector2i(1300, 0));
+		windows.put(sim.timeControls, new Vector2i(1000, 400));
 	}
 
 	public static void main(String[] args) {
@@ -146,14 +146,8 @@ public class Orbital2Main {
 			/* Input */
 			newFrame();
 
-			int x = 0, y = 0;
-			for(Window window : windows) {
-				window.layout(ctx, x, y);
-				x += window.getWidth();
-				if(x >= width) {
-					x = 0;
-					y += window.getHeight();
-				}
+			for(Entry<Window, Vector2i> entry : windows.entrySet()) {
+				entry.getKey().layout(ctx, entry.getValue());
 			}
 
 			try(MemoryStack stack = stackPush()) {
@@ -528,7 +522,7 @@ public class Orbital2Main {
 	private static void translateSpecialKeyPress(long window, int key, int scancode, int action, int mods) {
 		boolean press = action == GLFW_PRESS || action == GLFW_REPEAT;
 		switch(key) {
-			case GLFW_KEY_ESCAPE -> glfwSetWindowShouldClose(window, true);
+//			case GLFW_KEY_ESCAPE -> glfwSetWindowShouldClose(window, true);
 			case GLFW_KEY_DELETE -> nk_input_key(ctx, NK_KEY_DEL, press);
 			case GLFW_KEY_ENTER -> nk_input_key(ctx, NK_KEY_ENTER, press);
 			case GLFW_KEY_TAB -> nk_input_key(ctx, NK_KEY_TAB, press);

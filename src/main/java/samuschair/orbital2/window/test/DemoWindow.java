@@ -4,7 +4,9 @@ import org.lwjgl.BufferUtils;
 import org.lwjgl.nuklear.NkColor;
 import org.lwjgl.nuklear.NkColorf;
 import org.lwjgl.nuklear.NkContext;
+import org.lwjgl.nuklear.NkPluginFilter;
 import org.lwjgl.nuklear.NkVec2;
+import org.lwjgl.nuklear.Nuklear;
 import org.lwjgl.system.MemoryStack;
 import samuschair.orbital2.window.Window;
 
@@ -35,6 +37,8 @@ public class DemoWindow extends Window {
 	public DemoWindow() {
 		super("Demo");
 	}
+
+	protected static final NkPluginFilter filter = NkPluginFilter.create(Nuklear::nnk_filter_default);
 
 	@Override
 	public void render(NkContext ctx, MemoryStack stack) {
