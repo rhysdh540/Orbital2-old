@@ -3,6 +3,7 @@ package samuschair.orbital2.window;
 import lombok.Getter;
 import org.lwjgl.nuklear.NkContext;
 import org.lwjgl.system.MemoryStack;
+import samuschair.orbital2.util.MathUtil;
 
 import java.nio.FloatBuffer;
 import java.util.ArrayList;
@@ -42,13 +43,9 @@ public class TimeControls extends Window {
 
 		FloatBuffer buf = stack.floats(timescale);
 		nk_layout_row_dynamic(ctx, 30, 1);
-		nk_label(ctx, "Timescale: " + timescale, NK_TEXT_ALIGN_CENTERED | NK_TEXT_ALIGN_TOP);
+		nk_label(ctx, "Timescale: " + timescale, NK_TEXT_ALIGN_CENTERED | NK_TEXT_ALIGN_BOTTOM);
 		nk_slider_float(ctx, 0.1f, buf, 10.0f, 0.1f);
-		timescale = round(buf.get(0));
-	}
-
-	private static float round(float f) {
-		return Math.round(f * 10) / 10f;
+		timescale = MathUtil.round(buf.get(0), 1);
 	}
 
 	public void onReset(Runnable r) {

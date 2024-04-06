@@ -25,9 +25,9 @@ public class GravitySim extends Window {
 
 	boolean walls = true;
 
-	private static final double G = 5e-2;
-	private static final double ENERGY_KEPT_ON_COLLISION = 0.95;
-	private static final int TIMESCALE_PRECISION = 10;
+	static final double G = 5e-2;
+	static final double ENERGY_KEPT_ON_COLLISION = 0.95;
+	static final int TIMESCALE_PRECISION = 10;
 
 	@Override
 	protected void render(NkContext ctx, MemoryStack stack) {

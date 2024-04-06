@@ -7,6 +7,7 @@ import org.lwjgl.nuklear.NkPluginFilter;
 import org.lwjgl.nuklear.NkVec2;
 import org.lwjgl.nuklear.Nuklear;
 import org.lwjgl.system.MemoryStack;
+import samuschair.orbital2.Body;
 
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
@@ -16,7 +17,7 @@ import static org.lwjgl.system.MemoryUtil.memASCII;
 
 public class NumberEdit extends Window {
 	public NumberEdit(GravitySim sim) {
-		super("Edit", 300, 560);
+		super("Edit", 300, 660);
 		this.sim = sim;
 	}
 
@@ -24,30 +25,24 @@ public class NumberEdit extends Window {
 
 	@Override
 	protected void render(NkContext ctx, MemoryStack stack) {
-		nk_layout_row_dynamic(ctx, 30, 1);
-		nk_label(ctx, "Outer Body", NK_TEXT_ALIGN_CENTERED | NK_TEXT_ALIGN_TOP);
-		nk_layout_row_dynamic(ctx, 30, 2);
-		nk_label(ctx, "Mass", NK_TEXT_LEFT);
-		sim.outer.mass = editInt(ctx, stack, sim.outer.mass);
-		nk_label(ctx, "Radius", NK_TEXT_LEFT);
-		sim.outer.radius = editInt(ctx, stack, sim.outer.radius);
-		nk_label(ctx, "Color", NK_TEXT_LEFT);
-		editColor(ctx, stack, sim.outer.color);
+		body(ctx, stack, "Outer Body", sim.outer);
+		body(ctx, stack, "Inner Body", sim.inner);
 
 		nk_layout_row_dynamic(ctx, 30, 1);
-		nk_label(ctx, "Inner Body", NK_TEXT_ALIGN_CENTERED | NK_TEXT_ALIGN_TOP);
+		nk_label(ctx, "", 0);
+		sim.walls = !nk_check_text(ctx, "Enable Walls", !sim.walls);
+	}
+
+	private void body(NkContext ctx, MemoryStack stack, String name, Body body) {
+		nk_layout_row_dynamic(ctx, 30, 1);
+		nk_label(ctx, name, NK_TEXT_ALIGN_CENTERED | NK_TEXT_ALIGN_BOTTOM);
 		nk_layout_row_dynamic(ctx, 30, 2);
 		nk_label(ctx, "Mass", NK_TEXT_LEFT);
-		sim.inner.mass = editInt(ctx, stack, sim.inner.mass);
+		body.mass = editInt(ctx, stack, body.mass);
 		nk_label(ctx, "Radius", NK_TEXT_LEFT);
-		sim.inner.radius = editInt(ctx, stack, sim.inner.radius);
+		body.radius = editInt(ctx, stack, body.radius);
 		nk_label(ctx, "Color", NK_TEXT_LEFT);
-		editColor(ctx, stack, sim.inner.color);
-
-		nk_layout_row_dynamic(ctx, 30, 1);
-		nk_label(ctx, "Walls", NK_TEXT_ALIGN_CENTERED | NK_TEXT_ALIGN_TOP);
-		nk_layout_row_dynamic(ctx, 30, 1);
-		sim.walls = !nk_check_text(ctx, "Enable", !sim.walls);
+		editColor(ctx, stack, body.color);
 	}
 
 	@SuppressWarnings("DuplicatedCode")
