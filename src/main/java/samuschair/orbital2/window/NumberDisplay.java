@@ -11,7 +11,7 @@ import static org.lwjgl.nuklear.Nuklear.*;
 
 public class NumberDisplay extends Window {
 	public NumberDisplay(GravitySim sim) {
-		super("Numbers", 300, 500);
+		super("Numbers", 300, 575);
 		this.sim = sim;
 	}
 
@@ -32,6 +32,9 @@ public class NumberDisplay extends Window {
 
 		double ke = MathUtil.round(sim.inner.kineticEnergy() + sim.outer.kineticEnergy(), 3);
 		nk_label(ctx, "Kinetic energy: " + ke, NK_TEXT_LEFT);
+		double pe = MathUtil.round(GravitySim.G * (sim.inner.mass * sim.outer.mass / sim.inner.position.distanceSquared(sim.outer.position)), 3);
+		nk_label(ctx, "Potential energy: " + pe, NK_TEXT_LEFT);
+		nk_label(ctx, "Total energy: " + MathUtil.round(ke + pe, 3), NK_TEXT_LEFT);
 	}
 
 	// needed for small numbers like acceleration and velocity to not have scientific notation

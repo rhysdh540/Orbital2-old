@@ -17,7 +17,7 @@ import static org.lwjgl.system.MemoryUtil.memASCII;
 
 public class NumberEdit extends Window {
 	public NumberEdit(GravitySim sim) {
-		super("Edit", 300, 660);
+		super("Edit", 300, 735);
 		this.sim = sim;
 	}
 
