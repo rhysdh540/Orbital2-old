@@ -4,6 +4,7 @@ import org.joml.Vector2d;
 import org.lwjgl.nuklear.NkColor;
 import org.lwjgl.nuklear.NkCommandBuffer;
 import org.lwjgl.nuklear.NkContext;
+import org.lwjgl.nuklear.NkMouse;
 import org.lwjgl.nuklear.NkRect;
 import org.lwjgl.nuklear.NkVec2;
 import org.lwjgl.system.MemoryStack;
@@ -110,19 +111,23 @@ public class GravitySim extends Window {
 	//TODO make these work
 	private static final long OPEN_HAND_CURSOR = glfwCreateStandardCursor(GLFW_RESIZE_ALL_CURSOR);
 	private static final long CLOSED_HAND_CURSOR = glfwCreateStandardCursor(GLFW_RESIZE_ALL_CURSOR);
-	private static final long DEFAULT_CURSOR = glfwCreateStandardCursor(GLFW_CURSOR_NORMAL);
+	private static final long DEFAULT_CURSOR = glfwCreateStandardCursor(GLFW_ARROW_CURSOR);
 
 	private void panView(NkContext ctx, NkRect space) {
+		long window = Orbital2Main.getWindowId();
+		NkMouse mouse = ctx.input().mouse();
 		if(nk_input_is_mouse_hovering_rect(ctx.input(), space)) {
 			if(nk_input_is_mouse_down(ctx.input(), NK_BUTTON_LEFT)) {
-				glfwSetCursor(Orbital2Main.getWindowId(), CLOSED_HAND_CURSOR);
-				NkVec2 mouse = ctx.input().mouse().delta();
-				offset.add(mouse.x(), mouse.y());
+				glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_CAPTURED);
+				NkVec2 delta = mouse.delta();
+				if(delta.x() <= 450 && delta.y() <= 450) {
+					offset.add(delta.x(), delta.y());
+				}
 			} else {
-				glfwSetCursor(Orbital2Main.getWindowId(), OPEN_HAND_CURSOR);
+				glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 			}
 		} else {
-			glfwSetCursor(Orbital2Main.getWindowId(), DEFAULT_CURSOR);
+			glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 		}
 	}
 
