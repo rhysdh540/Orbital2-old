@@ -27,14 +27,14 @@ public class NumberDisplay extends Window {
 
 		nk_label(ctx, "Simulation", NK_TEXT_ALIGN_CENTERED | NK_TEXT_ALIGN_BOTTOM);
 		nk_label(ctx, "G: " + GravitySim.G, NK_TEXT_LEFT);
-		nk_label(ctx, "Distance between bodies: " + MathUtil.round(sim.inner.position.distance(sim.outer.position), 5), NK_TEXT_LEFT);
 		nk_label(ctx, "Energy kept on collision: " + GravitySim.ENERGY_KEPT_ON_COLLISION, NK_TEXT_LEFT);
 
+		nk_label(ctx, "Distance between bodies: " + MathUtil.round(sim.inner.position.distance(sim.outer.position), 5), NK_TEXT_LEFT);
 		double ke = MathUtil.round(sim.inner.kineticEnergy() + sim.outer.kineticEnergy(), 3);
 		nk_label(ctx, "Kinetic energy: " + ke, NK_TEXT_LEFT);
-		double pe = MathUtil.round(GravitySim.G * (sim.inner.mass * sim.outer.mass / sim.inner.position.distanceSquared(sim.outer.position)), 3);
-		nk_label(ctx, "Potential energy: " + pe, NK_TEXT_LEFT);
-		nk_label(ctx, "Total energy: " + MathUtil.round(ke + pe, 3), NK_TEXT_LEFT);
+		double pe = -MathUtil.round(GravitySim.G * (sim.inner.mass * sim.outer.mass / sim.inner.position.distance(sim.outer.position)), 3);
+		nk_label(ctx, "Potential energy: " + Math.abs(pe), NK_TEXT_LEFT);
+		nk_label(ctx, "Total energy: " + Math.abs(MathUtil.round(ke + pe, 3)), NK_TEXT_LEFT);
 	}
 
 	// needed for small numbers like acceleration and velocity to not have scientific notation

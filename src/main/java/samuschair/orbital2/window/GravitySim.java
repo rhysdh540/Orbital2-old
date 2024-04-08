@@ -26,8 +26,8 @@ public class GravitySim extends Window {
 	boolean walls = true;
 
 	static final double G = 5e-2;
-	static final double ENERGY_KEPT_ON_COLLISION = 0.95;
-	static final int TIMESCALE_PRECISION = 10;
+	static final double ENERGY_KEPT_ON_COLLISION = 1; // 0 is inelastic, 1 is elastic
+	static final int TIMESCALE_PRECISION = 100;
 
 	@Override
 	protected void render(NkContext ctx, MemoryStack stack) {
@@ -68,7 +68,7 @@ public class GravitySim extends Window {
 	private void resetPositions() {
 		inner.position.x = (double) width / 2;
 		inner.position.y = (double) height / 2;
-		inner.velocity.set(0, -0.005);
+		inner.velocity.set(0, -0.01);
 
 		outer.position.x = inner.position.x + 400;
 		outer.position.y = inner.position.y;
@@ -100,17 +100,27 @@ public class GravitySim extends Window {
 	}
 
 	private static void keepInside(Body body, NkRect space) {
-		double oldX = body.position.x, oldY = body.position.y;
-		body.position.x = Math.max(space.x() + body.radius, body.position.x);
-		body.position.x =  Math.min(space.x() + space.w() - body.radius, body.position.x);
-		if(body.position.x != oldX) {
-			body.velocity.mul(-ENERGY_KEPT_ON_COLLISION, 1);
+		int r = body.radius;
+		double x = body.position.x;
+		if(x < space.x() + r || x > space.x() + space.w() - r) {
+			double interceptX = x < space.x() + r ? space.x() + r : space.x() + space.w() - r;
+			double oldX = body.position.x - body.velocity.x;
+			double scalar = (interceptX - oldX) / (x - oldX); // from 0-1, how far along the line from old to new the intercept is
+
+			double interceptY = body.position.y - body.velocity.y * (1 - scalar);
+			body.position.set(interceptX, interceptY);
+			body.velocity.x *= -ENERGY_KEPT_ON_COLLISION;
 		}
 
-		body.position.y = Math.max(space.y() + body.radius, body.position.y);
-		body.position.y = Math.min(space.y() + space.h() - body.radius, body.position.y);
-		if(body.position.y != oldY) {
-			body.velocity.mul(1, -ENERGY_KEPT_ON_COLLISION);
+		double y = body.position.y;
+		if(y < space.y() + r || y > space.y() + space.h() - r) {
+			double interceptY = y < space.y() + r ? space.y() + r : space.y() + space.h() - r;
+			double oldY = body.position.y - body.velocity.y;
+			double scalar = (interceptY - oldY) / (y - oldY);
+
+			double interceptX = body.position.x - body.velocity.x * (1 - scalar);
+			body.position.set(interceptX, interceptY);
+			body.velocity.y *= -ENERGY_KEPT_ON_COLLISION;
 		}
 	}
 }
