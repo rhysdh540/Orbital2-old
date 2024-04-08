@@ -48,7 +48,6 @@ public class Orbital2Main {
 
 	// region Main setup and constants
 	public static final boolean debug;
-	public static final int fpsLimit;
 
 	private static final int BUFFER_INITIAL_SIZE = 4 * 1024;
 
@@ -62,18 +61,8 @@ public class Orbital2Main {
 	static {
 		debug = Boolean.parseBoolean(System.getProperty("orbital.debug", "not true"));
 
-		int fps;
-		try {
-			fps = Integer.parseInt(System.getProperty("orbital.fps", "60"));
-		} catch(NumberFormatException e) {
-			log("Invalid fps value, defaulting to 60");
-			fps = 60;
-		}
-		fpsLimit = fps;
-
 		if(debug) {
 			log("Debug mode enabled");
-			log("FPS limit: " + fpsLimit);
 			System.setProperty("org.lwjgl.util.Debug", "true");
 		}
 
@@ -466,7 +455,7 @@ public class Orbital2Main {
 		}
 
 		glfwMakeContextCurrent(windowId);
-		glfwSwapInterval(fpsLimit / 60); // Enable v-sync
+		glfwSwapInterval(1); // Enable v-sync
 		GLCapabilities caps = GL.createCapabilities();
 		Callback debugProc = GLUtil.setupDebugMessageCallback();
 

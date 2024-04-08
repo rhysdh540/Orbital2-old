@@ -78,7 +78,8 @@ public class GravitySim extends Window {
 
 	private void moveBodies() {
 		int timescale = (int) (timeControls.getTimescale() * TIMESCALE_PRECISION);
-		for(int i = 0; i < timescale; i++) {
+		int sign = timescale < 0 ? -1 : 1;
+		for(int i = 0; i < Math.abs(timescale); i++) {
 			double f = G * (outer.mass * inner.mass) / Math.pow(outer.position.distance(inner.position), 2);
 
 			double a1 = f / inner.mass;
@@ -88,14 +89,14 @@ public class GravitySim extends Window {
 			double cos = Math.cos(angle);
 			double sin = Math.sin(angle);
 
-			inner.acceleration.set(-(a1 * cos), -(a1 * sin)).div(TIMESCALE_PRECISION);
-			outer.acceleration.set(a2 * cos, a2 * sin).div(TIMESCALE_PRECISION);
+			inner.acceleration.set(-(a1 * cos), -(a1 * sin)).div(TIMESCALE_PRECISION).mul(sign);
+			outer.acceleration.set(a2 * cos, a2 * sin).div(TIMESCALE_PRECISION).mul(sign);
 
 			inner.velocity.add(inner.acceleration);
 			outer.velocity.add(outer.acceleration);
 
-			inner.position.add(inner.velocity.div(TIMESCALE_PRECISION, new Vector2d()));
-			outer.position.add(outer.velocity.div(TIMESCALE_PRECISION, new Vector2d()));
+			inner.position.add(inner.velocity.div(TIMESCALE_PRECISION, new Vector2d()).mul(sign));
+			outer.position.add(outer.velocity.div(TIMESCALE_PRECISION, new Vector2d()).mul(sign));
 		}
 	}
 
