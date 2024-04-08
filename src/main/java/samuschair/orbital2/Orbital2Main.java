@@ -1,5 +1,6 @@
 package samuschair.orbital2;
 
+import lombok.Getter;
 import org.joml.Vector2i;
 import org.lwjgl.glfw.GLFWErrorCallback;
 import org.lwjgl.nuklear.*;
@@ -94,6 +95,7 @@ public class Orbital2Main {
 	// endregion
 
 	// region GLFW variables
+	@Getter
 	private static long windowId; // The identifier of the GLFW window
 	private static int width, height; // The pixel dimensions of the GLFW window
 	private static int displayWidth, displayHeight; // The pixel dimensions of the content inside the window, this will usually be the same size as the window.

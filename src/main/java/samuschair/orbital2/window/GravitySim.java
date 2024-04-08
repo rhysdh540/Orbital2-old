@@ -5,11 +5,14 @@ import org.lwjgl.nuklear.NkColor;
 import org.lwjgl.nuklear.NkCommandBuffer;
 import org.lwjgl.nuklear.NkContext;
 import org.lwjgl.nuklear.NkRect;
+import org.lwjgl.nuklear.NkVec2;
 import org.lwjgl.system.MemoryStack;
 import samuschair.orbital2.Body;
+import samuschair.orbital2.Orbital2Main;
 
 import java.util.Objects;
 
+import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.nuklear.Nuklear.*;
 
 public class GravitySim extends Window {
@@ -23,7 +26,9 @@ public class GravitySim extends Window {
 	final Body outer = new Body(100, 10, 35, 87, 219);
 	final Body inner = new Body(10000, 50, 255, 255, 240);
 
-	boolean walls = true;
+	private final Vector2d offset = new Vector2d();
+
+	boolean walls = false;
 
 	static final double G = 5e-2;
 	static final double ENERGY_KEPT_ON_COLLISION = 1; // 0 is inelastic, 1 is elastic
@@ -50,16 +55,18 @@ public class GravitySim extends Window {
 			}
 		}
 
+		panView(ctx, space);
+
 		nk_fill_circle(canvas,
-				nk_rect((float) outer.position.x - outer.radius,
-						(float) outer.position.y - outer.radius,
+				nk_rect((float) outer.position.x - outer.radius + (float) offset.x,
+						(float) outer.position.y - outer.radius + (float) offset.y,
 						outer.getDiameter(),
 						outer.getDiameter(), space),
 				nk_rgb_cf(outer.color, NkColor.malloc(stack)));
 
 		nk_fill_circle(canvas,
-				nk_rect((float) inner.position.x - inner.radius,
-						(float) inner.position.y - inner.radius,
+				nk_rect((float) inner.position.x - inner.radius + (float) offset.x,
+						(float) inner.position.y - inner.radius + (float) offset.y,
 						inner.getDiameter(),
 						inner.getDiameter(), space),
 				nk_rgb_cf(inner.color, NkColor.malloc(stack)));
@@ -89,14 +96,33 @@ public class GravitySim extends Window {
 			double cos = Math.cos(angle);
 			double sin = Math.sin(angle);
 
-			inner.acceleration.set(-(a1 * cos), -(a1 * sin)).div(TIMESCALE_PRECISION).mul(sign);
-			outer.acceleration.set(a2 * cos, a2 * sin).div(TIMESCALE_PRECISION).mul(sign);
+			inner.acceleration.set(-(a1 * cos), -(a1 * sin)).div(TIMESCALE_PRECISION * sign);
+			outer.acceleration.set(a2 * cos, a2 * sin).div(TIMESCALE_PRECISION * sign);
 
 			inner.velocity.add(inner.acceleration);
 			outer.velocity.add(outer.acceleration);
 
-			inner.position.add(inner.velocity.div(TIMESCALE_PRECISION, new Vector2d()).mul(sign));
-			outer.position.add(outer.velocity.div(TIMESCALE_PRECISION, new Vector2d()).mul(sign));
+			inner.position.add(inner.velocity.div(TIMESCALE_PRECISION * sign, new Vector2d()));
+			outer.position.add(outer.velocity.div(TIMESCALE_PRECISION * sign, new Vector2d()));
+		}
+	}
+
+	//TODO make these work
+	private static final long OPEN_HAND_CURSOR = glfwCreateStandardCursor(GLFW_RESIZE_ALL_CURSOR);
+	private static final long CLOSED_HAND_CURSOR = glfwCreateStandardCursor(GLFW_RESIZE_ALL_CURSOR);
+	private static final long DEFAULT_CURSOR = glfwCreateStandardCursor(GLFW_CURSOR_NORMAL);
+
+	private void panView(NkContext ctx, NkRect space) {
+		if(nk_input_is_mouse_hovering_rect(ctx.input(), space)) {
+			if(nk_input_is_mouse_down(ctx.input(), NK_BUTTON_LEFT)) {
+				glfwSetCursor(Orbital2Main.getWindowId(), CLOSED_HAND_CURSOR);
+				NkVec2 mouse = ctx.input().mouse().delta();
+				offset.add(mouse.x(), mouse.y());
+			} else {
+				glfwSetCursor(Orbital2Main.getWindowId(), OPEN_HAND_CURSOR);
+			}
+		} else {
+			glfwSetCursor(Orbital2Main.getWindowId(), DEFAULT_CURSOR);
 		}
 	}
 
