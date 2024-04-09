@@ -24,6 +24,10 @@ public class GravitySim extends Window {
 	}
 
 	public final TimeControls timeControls = new TimeControls();
+	public final CameraControls cameraControls = new CameraControls(this);
+	public final NumberEdit numberEdit = new NumberEdit(this);
+	public final NumberDisplay numberDisplay = new NumberDisplay(this);
+
 	final Body outer = new Body(100, 10, 35, 87, 219);
 	final Body inner = new Body(10000, 50, 255, 255, 240);
 

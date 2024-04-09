@@ -3,7 +3,9 @@ package samuschair.orbital2.window;
 import lombok.Getter;
 import org.lwjgl.nuklear.NkContext;
 import org.lwjgl.nuklear.NkPluginFilter;
+import org.lwjgl.nuklear.Nuklear;
 import org.lwjgl.system.MemoryStack;
+import samuschair.orbital2.util.Pair;
 
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
@@ -49,7 +51,7 @@ public class TimeControls extends Window {
 		nk_label(ctx, "Timescale: " + timescale, NK_TEXT_ALIGN_CENTERED | NK_TEXT_ALIGN_BOTTOM);
 		ByteBuffer buffer = stack.calloc(11);
 		IntBuffer len = stack.ints(memASCII(timescaleString, false, buffer));
-		nk_edit_string(ctx, NK_EDIT_SIMPLE, buffer, len, 10, NkPluginFilter.create((l, c) -> c == '.' || (c >= '0' && c <= '9')));
+		nk_edit_string(ctx, NK_EDIT_SIMPLE, buffer, len, 10, NkPluginFilter.create(Nuklear::nnk_filter_float));
 		timescaleString = memASCII(buffer, len.get(0));
 		if(nk_input_is_key_pressed(ctx.input(), NK_KEY_ENTER)) {
 			try {

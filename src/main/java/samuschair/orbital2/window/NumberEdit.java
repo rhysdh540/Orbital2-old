@@ -1,5 +1,6 @@
 package samuschair.orbital2.window;
 
+import org.joml.Vector2d;
 import org.lwjgl.nuklear.NkColor;
 import org.lwjgl.nuklear.NkColorf;
 import org.lwjgl.nuklear.NkContext;
@@ -8,16 +9,19 @@ import org.lwjgl.nuklear.NkVec2;
 import org.lwjgl.nuklear.Nuklear;
 import org.lwjgl.system.MemoryStack;
 import samuschair.orbital2.Body;
+import samuschair.orbital2.util.Pair;
 
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.lwjgl.nuklear.Nuklear.*;
 import static org.lwjgl.system.MemoryUtil.memASCII;
 
 public class NumberEdit extends Window {
 	public NumberEdit(GravitySim sim) {
-		super("Edit", 300, 735);
+		super("Edit", 300, 575);
 		this.sim = sim;
 	}
 
@@ -27,10 +31,6 @@ public class NumberEdit extends Window {
 	protected void render(NkContext ctx, MemoryStack stack) {
 		body(ctx, stack, "Outer Body", sim.outer);
 		body(ctx, stack, "Inner Body", sim.inner);
-
-		nk_layout_row_dynamic(ctx, 30, 1);
-		nk_label(ctx, "", 0);
-		sim.walls = !nk_check_text(ctx, "Enable Walls", !sim.walls);
 	}
 
 	private void body(NkContext ctx, MemoryStack stack, String name, Body body) {
@@ -43,6 +43,9 @@ public class NumberEdit extends Window {
 		body.radius = editInt(ctx, stack, body.radius);
 		nk_label(ctx, "Color", NK_TEXT_LEFT);
 		editColor(ctx, stack, body.color);
+
+		editVector(ctx, stack, body.position, "Position");
+		editVector(ctx, stack, body.velocity, "Velocity");
 	}
 
 	@SuppressWarnings("DuplicatedCode")
@@ -70,5 +73,53 @@ public class NumberEdit extends Window {
 		} catch (NumberFormatException e) {
 			return value;
 		}
+	}
+
+
+	private static final Map<Vector2d, Pair<String, String>> vectors = new HashMap<>();
+
+	private void editVector(NkContext ctx, MemoryStack stack, Vector2d value, String label) {
+		// Calculate the width of the window
+
+
+		Pair<String, String> strings = vectors.computeIfAbsent(value, ignore -> Pair.of("", ""));
+
+		// Set up the row with static widths
+		nk_layout_row_begin(ctx, NK_STATIC, 30, 6);
+		nk_layout_row_push(ctx, 70);
+		nk_label(ctx, label + ":", NK_TEXT_LEFT);
+		nk_layout_row_push(ctx, 8);
+		nk_label(ctx, "(", NK_TEXT_LEFT);
+		nk_layout_row_push(ctx, 80);
+
+		ByteBuffer buffer = stack.calloc(32);
+		IntBuffer len = stack.ints(memASCII(strings.first, false, buffer));
+		nk_edit_string(ctx, NK_EDIT_FIELD, buffer, len, 32, NkPluginFilter.create(Nuklear::nnk_filter_float));
+		strings.first = memASCII(buffer, len.get(0));
+		if(nk_input_is_key_pressed(ctx.input(), NK_KEY_ENTER)) {
+			try {
+				value.x = Double.parseDouble(strings.first);
+			} catch (NumberFormatException e) {
+			}
+		}
+
+		nk_layout_row_push(ctx, 8);
+		nk_label(ctx, ",", NK_TEXT_LEFT);
+		nk_layout_row_push(ctx, 80);
+
+		buffer = stack.calloc(32);
+		len = stack.ints(memASCII(strings.second, false, buffer));
+		nk_edit_string(ctx, NK_EDIT_FIELD, buffer, len, 32, NkPluginFilter.create(Nuklear::nnk_filter_float));
+		strings.second = memASCII(buffer, len.get(0));
+		if(nk_input_is_key_pressed(ctx.input(), NK_KEY_ENTER)) {
+			try {
+				value.y = Double.parseDouble(strings.second);
+			} catch (NumberFormatException e) {
+			}
+		}
+
+		nk_layout_row_push(ctx, 10);
+		nk_label(ctx, ")", NK_TEXT_LEFT);
+		nk_layout_row_end(ctx);
 	}
 }

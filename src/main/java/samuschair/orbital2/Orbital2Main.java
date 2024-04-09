@@ -121,9 +121,10 @@ public class Orbital2Main {
 	static {
 		GravitySim sim = new GravitySim();
 		windows.put(sim, new Vector2i(0, 0));
-		windows.put(new NumberDisplay(sim), new Vector2i(1000, 0));
-		windows.put(new NumberEdit(sim), new Vector2i(1300, 0));
+		windows.put(sim.numberDisplay, new Vector2i(1000, 0));
+		windows.put(sim.numberEdit, new Vector2i(1300, 0));
 		windows.put(sim.timeControls, new Vector2i(1000, 575));
+		windows.put(sim.cameraControls, new Vector2i(1300, 575));
 	}
 
 	public static void main(String[] args) {
