@@ -28,8 +28,29 @@ public class GravitySim extends Window {
 	public final NumberEdit numberEdit = new NumberEdit(this);
 	public final NumberDisplay numberDisplay = new NumberDisplay(this);
 
-	final Body outer = new Body(100, 10, 35, 87, 219);
-	final Body inner = new Body(10000, 50, 255, 255, 240);
+	final Body[] bodies = {
+			Body.builder() // Sun
+					.withMass(10000)
+					.withRadius(50)
+					.withColor(255, 255, 240)
+					.withPosition(width / 2, height / 2)
+					.build(),
+			Body.builder() // Earth
+					.withMass(100)
+					.withRadius(10)
+					.withColor(35, 87, 219)
+					.withPosition(width / 2 + 400, height / 2)
+			.build(),
+			Body.builder()
+					.withMass(10)
+					.withRadius(5)
+					.withColor(255, 0, 0)
+					.withPosition(500, 500)
+					.build(),
+	};
+
+	final Body inner = bodies[1];
+	final Body outer = bodies[0];
 
 	final Vector2d offset = new Vector2d();
 	double zoomScale = 1;
@@ -55,16 +76,13 @@ public class GravitySim extends Window {
 
 		if(timeControls.isRunning()) {
 			moveBodies();
-			if(walls) {
-				keepInside(outer, space);
-				keepInside(inner, space);
-			}
 		}
 
 		panView(ctx, space);
 
-		drawCircle(ctx, stack, canvas, space, outer);
-		drawCircle(ctx, stack, canvas, space, inner);
+		for(Body body : bodies) {
+			drawCircle(ctx, stack, canvas, space, body);
+		}
 	}
 
 	private void drawCircle(NkContext ctx, MemoryStack stack, NkCommandBuffer canvas, NkRect space, Body body) {
@@ -101,11 +119,9 @@ public class GravitySim extends Window {
 	 */
 
 	private void resetPositions() {
-		inner.position.x = (double) width / 2;
-		inner.position.y = (double) height / 2;
-
-		outer.position.x = inner.position.x + 400;
-		outer.position.y = inner.position.y;
+		for(Body body : bodies) {
+			body.reset();
+		}
 
 		double distance = outer.position.distance(inner.position);
 		outer.velocity.set(0, Math.sqrt(G * inner.mass / distance));
@@ -115,23 +131,26 @@ public class GravitySim extends Window {
 		int timescale = (int) (timeControls.getTimescale() * TIMESCALE_PRECISION);
 		int sign = timescale < 0 ? -1 : 1;
 		for(int i = 0; i < Math.abs(timescale); i++) {
-			double f = G * (outer.mass * inner.mass) / Math.pow(outer.position.distance(inner.position), 2);
+			for (Body body1 : bodies) {
+				Vector2d totalForce = new Vector2d();
+				for (Body body2 : bodies) {
+					if (body1 != body2) {
+						double f = G * (body1.mass * body2.mass) / Math.pow(body1.position.distance(body2.position), 2);
+						double angle = Math.atan2(body1.position.y - body2.position.y, body1.position.x - body2.position.x);
+						double fx = f * Math.cos(angle);
+						double fy = f * Math.sin(angle);
+						totalForce.add(fx, fy);
+					}
+				}
+				double a1 = totalForce.length() / body1.mass;
+				double angle = Math.atan2(totalForce.y, totalForce.x);
+				double cos = Math.cos(angle);
+				double sin = Math.sin(angle);
 
-			double a1 = f / inner.mass;
-			double a2 = f / outer.mass;
-
-			double angle = Math.atan2(inner.position.y - outer.position.y, inner.position.x - outer.position.x);
-			double cos = Math.cos(angle);
-			double sin = Math.sin(angle);
-
-			inner.acceleration.set(-(a1 * cos), -(a1 * sin)).div(TIMESCALE_PRECISION * sign);
-			outer.acceleration.set(a2 * cos, a2 * sin).div(TIMESCALE_PRECISION * sign);
-
-			inner.velocity.add(inner.acceleration);
-			outer.velocity.add(outer.acceleration);
-
-			inner.position.add(inner.velocity.div(TIMESCALE_PRECISION * sign, new Vector2d()));
-			outer.position.add(outer.velocity.div(TIMESCALE_PRECISION * sign, new Vector2d()));
+				body1.acceleration.set(-(a1 * cos), -(a1 * sin)).div(TIMESCALE_PRECISION * sign);
+				body1.velocity.add(body1.acceleration);
+				body1.position.add(body1.velocity.div(TIMESCALE_PRECISION * sign, new Vector2d()));
+			}
 		}
 	}
 
