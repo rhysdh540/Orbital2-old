@@ -18,7 +18,7 @@ import org.lwjgl.system.Configuration;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.NativeResource;
 import org.lwjgl.system.Platform;
-import samuschair.orbital2.window.GravitySim;
+import samuschair.orbital2.window.TerminalWindow;
 import samuschair.orbital2.window.Window;
 
 import java.io.IOException;
@@ -117,12 +117,7 @@ public class Orbital2Main {
 
 	private static final Map<Window, Vector2i> windows = new LinkedHashMap<>();
 	static {
-		GravitySim sim = new GravitySim();
-		windows.put(sim, new Vector2i(0, 0));
-		windows.put(sim.numberDisplay, new Vector2i(1000, 0));
-		windows.put(sim.numberEdit, new Vector2i(1300, 0));
-		windows.put(sim.timeControls, new Vector2i(1000, 575));
-		windows.put(sim.cameraControls, new Vector2i(1300, 575));
+		windows.put(new TerminalWindow(), new Vector2i(200, 400));
 	}
 
 	public static void main(String[] args) {
@@ -452,6 +447,7 @@ public class Orbital2Main {
 
 		windowId = glfwCreateWindow(640, 640, "Orbital", NULL, NULL);
 		if(windowId == NULL) {
+			glfwTerminate();
 			throw new RuntimeException("Failed to create the GLFW window");
 		}
 

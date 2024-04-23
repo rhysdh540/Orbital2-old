@@ -1,4 +1,4 @@
-package samuschair.orbital2;
+package samuschair.orbital2.sim;
 
 import org.joml.Vector2d;
 import org.joml.Vector2dc;
@@ -10,7 +10,6 @@ import java.awt.*;
 public class Body {
 
 	public int mass;
-
 	public int radius;
 
 	public final Vector2d position;

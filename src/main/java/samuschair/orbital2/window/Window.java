@@ -73,6 +73,7 @@ public abstract class Window {
 				render(ctx, stack);
 			}
 			nk_end(ctx);
+			postRender(ctx, stack);
 		}
 	}
 
@@ -96,6 +97,10 @@ public abstract class Window {
 	protected abstract void render(NkContext ctx, MemoryStack stack);
 
 	protected void preRender(NkContext ctx, MemoryStack stack) {
+		// Do nothing by default
+	}
+
+	protected void postRender(NkContext ctx, MemoryStack stack) {
 		// Do nothing by default
 	}
 }
