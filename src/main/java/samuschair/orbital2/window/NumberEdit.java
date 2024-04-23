@@ -31,6 +31,19 @@ public class NumberEdit extends Window {
 	protected void render(NkContext ctx, MemoryStack stack) {
 		body(ctx, stack, "Outer Body", sim.outer);
 		body(ctx, stack, "Inner Body", sim.inner);
+
+		nk_layout_row_dynamic(ctx, 30, 1);
+		if(nk_button_label(ctx, "Reset Position")) {
+			sim.inner.position.x = (double) width / 2;
+			sim.inner.position.y = (double) height / 2;
+			sim.outer.position.x = sim.inner.position.x + 400;
+			sim.outer.position.y = sim.inner.position.y;
+		}
+
+		if(nk_button_label(ctx, "Reset Velocity")) {
+			sim.outer.velocity.set(0, Math.sqrt(GravitySim.G * sim.inner.mass / sim.outer.position.distance(sim.inner.position)));
+			sim.inner.velocity.set(0, -0.01);
+		}
 	}
 
 	private void body(NkContext ctx, MemoryStack stack, String name, Body body) {
@@ -99,7 +112,7 @@ public class NumberEdit extends Window {
 		if(nk_input_is_key_pressed(ctx.input(), NK_KEY_ENTER)) {
 			try {
 				value.x = Double.parseDouble(strings.first);
-			} catch (NumberFormatException e) {
+			} catch (NumberFormatException ignored) {
 			}
 		}
 
@@ -114,7 +127,7 @@ public class NumberEdit extends Window {
 		if(nk_input_is_key_pressed(ctx.input(), NK_KEY_ENTER)) {
 			try {
 				value.y = Double.parseDouble(strings.second);
-			} catch (NumberFormatException e) {
+			} catch (NumberFormatException ignored) {
 			}
 		}
 

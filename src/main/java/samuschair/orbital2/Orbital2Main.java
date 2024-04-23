@@ -19,8 +19,6 @@ import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.NativeResource;
 import org.lwjgl.system.Platform;
 import samuschair.orbital2.window.GravitySim;
-import samuschair.orbital2.window.NumberDisplay;
-import samuschair.orbital2.window.NumberEdit;
 import samuschair.orbital2.window.Window;
 
 import java.io.IOException;
@@ -479,7 +477,7 @@ public class Orbital2Main {
 		return debugProc;
 	}
 
-	private static void destroy() {
+	private static void turnOffGL() {
 		glDetachShader(shaderProgram, vertexShader);
 		glDetachShader(shaderProgram, fragmentShader);
 		glDeleteShader(vertexShader);
@@ -498,7 +496,7 @@ public class Orbital2Main {
 		free(ctx.clip()::copy);
 		free(ctx.clip()::paste);
 		nk_free(ctx);
-		destroy();
+		turnOffGL();
 
 		free(defaultFont::query);
 		free(defaultFont::width);

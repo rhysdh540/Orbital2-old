@@ -31,13 +31,14 @@ public class GravitySim extends Window {
 	final Body outer = new Body(100, 10, 35, 87, 219);
 	final Body inner = new Body(10000, 50, 255, 255, 240);
 
-	private final Vector2d offset = new Vector2d();
+	final Vector2d offset = new Vector2d();
+	double zoomScale = 1;
 
 	boolean walls = false;
 
-	static final double G = 5e-2;
+	static final double G = 0.05;//6.67430e-11;
 	static final double ENERGY_KEPT_ON_COLLISION = 1; // 0 is inelastic, 1 is elastic
-	static final int TIMESCALE_PRECISION = 100;
+	static final int TIMESCALE_PRECISION = 1;
 
 	@Override
 	protected void render(NkContext ctx, MemoryStack stack) {
@@ -62,30 +63,52 @@ public class GravitySim extends Window {
 
 		panView(ctx, space);
 
-		nk_fill_circle(canvas,
-				nk_rect((float) outer.position.x - outer.radius + (float) offset.x,
-						(float) outer.position.y - outer.radius + (float) offset.y,
-						outer.getDiameter(),
-						outer.getDiameter(), space),
-				nk_rgb_cf(outer.color, NkColor.malloc(stack)));
+		drawCircle(ctx, stack, canvas, space, outer);
+		drawCircle(ctx, stack, canvas, space, inner);
+	}
+
+	private void drawCircle(NkContext ctx, MemoryStack stack, NkCommandBuffer canvas, NkRect space, Body body) {
+		float d = body.getDiameter() * (float) zoomScale;
 
 		nk_fill_circle(canvas,
-				nk_rect((float) inner.position.x - inner.radius + (float) offset.x,
-						(float) inner.position.y - inner.radius + (float) offset.y,
-						inner.getDiameter(),
-						inner.getDiameter(), space),
-				nk_rgb_cf(inner.color, NkColor.malloc(stack)));
+				nk_rect((float) (body.position.x - body.radius + offset.x) * (float) zoomScale,
+						(float) (body.position.y - body.radius + offset.y) * (float) zoomScale,
+						d, d, space),
+				nk_rgb_cf(body.color, NkColor.malloc(stack)));
 	}
+
+	/*
+	private void drawCircle(NkContext ctx, MemoryStack stack, NkCommandBuffer canvas, NkRect space, Body body) {
+		NkMouse mouse = ctx.input().mouse();
+		float mouseX = mouse.pos().x();
+		float mouseY = mouse.pos().y();
+
+		float d = body.getDiameter() * (float) zoomScale;
+
+		// Calculate the offset from the mouse to the object's center
+		float offsetX = (float) ((body.position.x - mouseX) * (float) zoomScale);
+		float offsetY = (float) ((body.position.y - mouseY) * (float) zoomScale);
+
+		// Calculate the new position by applying the zoom scale
+		float x = mouseX + offsetX;
+		float y = mouseY + offsetY;
+
+		// Draw the circle at the new position
+		nk_fill_circle(canvas,
+				nk_rect(x, y, d, d, space),
+				nk_rgb_cf(body.color, NkColor.malloc(stack)));
+	}
+	 */
 
 	private void resetPositions() {
 		inner.position.x = (double) width / 2;
 		inner.position.y = (double) height / 2;
-		inner.velocity.set(0, -0.01);
 
 		outer.position.x = inner.position.x + 400;
 		outer.position.y = inner.position.y;
 
-		outer.velocity.set(0, Math.sqrt(G * inner.mass / outer.position.distance(inner.position)));
+		double distance = outer.position.distance(inner.position);
+		outer.velocity.set(0, Math.sqrt(G * inner.mass / distance));
 	}
 
 	private void moveBodies() {
@@ -112,11 +135,6 @@ public class GravitySim extends Window {
 		}
 	}
 
-	//TODO make these work
-	private static final long OPEN_HAND_CURSOR = glfwCreateStandardCursor(GLFW_RESIZE_ALL_CURSOR);
-	private static final long CLOSED_HAND_CURSOR = glfwCreateStandardCursor(GLFW_RESIZE_ALL_CURSOR);
-	private static final long DEFAULT_CURSOR = glfwCreateStandardCursor(GLFW_ARROW_CURSOR);
-
 	private void panView(NkContext ctx, NkRect space) {
 		long window = Orbital2Main.getWindowId();
 		NkMouse mouse = ctx.input().mouse();
@@ -133,12 +151,14 @@ public class GravitySim extends Window {
 		} else {
 			glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 		}
+
+		zoomScale += mouse.scroll_delta().y() * 0.1;
 	}
 
-	private static void keepInside(Body body, NkRect space) {
+	private void keepInside(Body body, NkRect space) {
 		int r = body.radius;
 		double x = body.position.x;
-		if(x < space.x() + r || x > space.x() + space.w() - r) {
+		if(x < space.x() + r + offset.x || x > space.x() + space.w() + offset.x - r) {
 			double interceptX = x < space.x() + r ? space.x() + r : space.x() + space.w() - r;
 			double oldX = body.position.x - body.velocity.x;
 			double scalar = (interceptX - oldX) / (x - oldX); // from 0-1, how far along the line from old to new the intercept is

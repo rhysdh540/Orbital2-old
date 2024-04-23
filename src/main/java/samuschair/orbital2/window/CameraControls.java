@@ -16,6 +16,9 @@ public class CameraControls extends Window {
 	@Override
 	protected void render(NkContext ctx, MemoryStack stack) {
 		nk_layout_row_dynamic(ctx, 30, 1);
-		sim.walls = !nk_check_text(ctx, "Enable Walls", !sim.walls);
+		if(nk_button_label(ctx, "Reset Camera")) {
+			sim.offset.set(0, 0);
+			sim.zoomScale = 1;
+		}
 	}
 }
