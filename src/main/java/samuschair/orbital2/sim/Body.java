@@ -17,7 +17,7 @@ public class Body {
 	public final Vector2d acceleration;
 	private final Vector2dc originalPosition;
 
-	public final NkColorf color;
+	public final Color color;
 
 	public Body(int mass, int radius, int r, int g, int b, int x, int y) {
 		this.mass = mass;
@@ -26,11 +26,7 @@ public class Body {
 		this.velocity = new Vector2dFixed();
 		this.acceleration = new Vector2dFixed();
 		this.originalPosition = new Vector2dFixed().set(x, y);
-		this.color = NkColorf.create()
-				.r((float) r / 255)
-				.g((float) g / 255)
-				.b((float) b / 255)
-				.a(1);
+		this.color = new Color(r, g, b);
 	}
 
 	public void reset() {
@@ -47,6 +43,11 @@ public class Body {
 		return 0.5 * mass * velocity.lengthSquared();
 	}
 
+	public void move(double dt) {
+		velocity.add(acceleration.x * dt, acceleration.y * dt);
+		position.add(velocity.x * dt, velocity.y * dt);
+	}
+
 	private static final class Vector2dFixed extends Vector2d {
 		public Vector2dFixed() {
 			super();
@@ -56,6 +57,13 @@ public class Body {
 		public String toString() {
 			return "(" + MathUtil.round(x, 3) + ", " + MathUtil.round(y, 3) + ")";
 		}
+	}
+
+	public NkColorf colorAsNkColorf() {
+		int r = color.getRed();
+		int g = color.getGreen();
+		int b = color.getBlue();
+		return NkColorf.malloc().set((float) r / 255, (float) g / 255, (float) b / 255, 1);
 	}
 
 	public static BodyBuilder builder() {

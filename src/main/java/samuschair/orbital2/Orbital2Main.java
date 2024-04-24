@@ -18,6 +18,7 @@ import org.lwjgl.system.Configuration;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.NativeResource;
 import org.lwjgl.system.Platform;
+import samuschair.orbital2.window.SimWindow;
 import samuschair.orbital2.window.TerminalWindow;
 import samuschair.orbital2.window.Window;
 
@@ -117,7 +118,8 @@ public class Orbital2Main {
 
 	private static final Map<Window, Vector2i> windows = new LinkedHashMap<>();
 	static {
-		windows.put(new TerminalWindow(), new Vector2i(200, 400));
+//		windows.put(new TerminalWindow(), new Vector2i(200, 400));
+		windows.put(new SimWindow(), new Vector2i(0, 0));
 	}
 
 	public static void main(String[] args) {
@@ -128,9 +130,9 @@ public class Orbital2Main {
 		glfwShowWindow(windowId);
 		glfwMaximizeWindow(windowId);
 		while(!glfwWindowShouldClose(windowId)) {
-			/* Input */
-			newFrame();
+			updateInput();
 
+			// nuklear windows
 			for(Entry<Window, Vector2i> entry : windows.entrySet()) {
 				entry.getKey().layout(ctx, entry.getValue());
 			}
@@ -299,7 +301,7 @@ public class Orbital2Main {
 		return ctx;
 	}
 
-	private static void newFrame() {
+	private static void updateInput() {
 		try(MemoryStack stack = stackPush()) {
 			IntBuffer w = stack.mallocInt(1);
 			IntBuffer h = stack.mallocInt(1);
