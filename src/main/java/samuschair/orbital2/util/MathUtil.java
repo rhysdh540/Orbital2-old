@@ -15,4 +15,8 @@ public final class MathUtil {
 		double factor = Math.pow(10, places);
 		return Math.round(d * factor) / factor;
 	}
+
+	public static double log2(double x) {
+		return Math.log(x) / Math.log(2);
+	}
 }
