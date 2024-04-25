@@ -13,6 +13,7 @@ import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.zip.GZIPInputStream;
 
 public final class IOUtil {
 
@@ -26,7 +27,7 @@ public final class IOUtil {
 	}
 
 	/**
-	 * Reads the specified resource and returns the raw data as a ByteBuffer.
+	 * Reads the specified resource, decompresses it and returns it as a ByteBuffer.
 	 *
 	 * @param resource   the resource to read
 	 * @param bufferSize the initial buffer size
@@ -35,8 +36,11 @@ public final class IOUtil {
 	 *
 	 * @throws IOException if an IO error occurs
 	 */
-	public static ByteBuffer ioResourceToByteBuffer(String resource, int bufferSize) throws IOException {
+	public static ByteBuffer gZippedIOResourceToByteBuffer(String resource, int bufferSize) throws IOException {
 		ByteBuffer buffer;
+		if(!resource.endsWith(".gz")) {
+			resource += ".gz";
+		}
 
 		Path path = resource.startsWith("http") ? null : Paths.get(resource);
 		if (path != null && Files.isReadable(path)) {
@@ -46,9 +50,9 @@ public final class IOUtil {
 			}
 		} else {
 			try (
-					InputStream source = resource.startsWith("http")
+					InputStream source = new GZIPInputStream(resource.startsWith("http")
 							? new URL(resource).openStream()
-							: IOUtil.class.getClassLoader().getResourceAsStream(resource);
+							: IOUtil.class.getClassLoader().getResourceAsStream(resource));
 					ReadableByteChannel rbc = Channels.newChannel(source)
 			) {
 				buffer = BufferUtils.createByteBuffer(bufferSize);

@@ -35,7 +35,7 @@ public class SimWindow extends Window {
 				.withPosition(width / 2, height / 2)
 				.build();
 
-		earth.velocity.set(0, Math.sqrt(sim.G * sun.mass / earth.position.distance(sun.position)));
+		earth.orbit(sun, sim.G);
 		sim.addBody(earth);
 		sim.addBody(sun);
 	}

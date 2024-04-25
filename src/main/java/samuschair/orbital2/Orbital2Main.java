@@ -19,7 +19,6 @@ import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.NativeResource;
 import org.lwjgl.system.Platform;
 import samuschair.orbital2.window.SimWindow;
-import samuschair.orbital2.window.TerminalWindow;
 import samuschair.orbital2.window.Window;
 
 import java.io.IOException;
@@ -41,7 +40,7 @@ import static org.lwjgl.opengl.GL30C.*;
 import static org.lwjgl.stb.STBTruetype.*;
 import static org.lwjgl.system.MemoryStack.*;
 import static org.lwjgl.system.MemoryUtil.*;
-import static samuschair.orbital2.util.IOUtil.ioResourceToByteBuffer;
+import static samuschair.orbital2.util.IOUtil.gZippedIOResourceToByteBuffer;
 
 @SuppressWarnings({"resource", "SameParameterValue"})
 public class Orbital2Main {
@@ -86,7 +85,7 @@ public class Orbital2Main {
 
 	static {
 		try {
-			font = ioResourceToByteBuffer("FiraSans-Regular.ttf", 512 * 1024);
+			font = gZippedIOResourceToByteBuffer("FiraSans-Regular.ttf", 512 * 1024);
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}

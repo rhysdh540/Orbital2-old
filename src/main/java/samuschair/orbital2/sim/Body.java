@@ -1,5 +1,9 @@
 package samuschair.orbital2.sim;
 
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
+import lombok.With;
 import org.joml.Vector2d;
 import org.joml.Vector2dc;
 import org.lwjgl.nuklear.NkColorf;
@@ -19,14 +23,14 @@ public class Body {
 
 	public final Color color;
 
-	public Body(int mass, int radius, int r, int g, int b, int x, int y) {
+	public Body(int mass, int radius, Color color, int x, int y) {
 		this.mass = mass;
 		this.radius = radius;
 		this.position = new Vector2dFixed().set(x, y);
 		this.velocity = new Vector2dFixed();
 		this.acceleration = new Vector2dFixed();
 		this.originalPosition = new Vector2dFixed().set(x, y);
-		this.color = new Color(r, g, b);
+		this.color = color;
 	}
 
 	public void reset() {
@@ -43,20 +47,31 @@ public class Body {
 		return 0.5 * mass * velocity.lengthSquared();
 	}
 
+	/**
+	 * Moves this body based on its velocity and acceleration.
+	 *
+	 * @param dt the time step
+	 */
 	public void move(double dt) {
 		velocity.add(acceleration.x * dt, acceleration.y * dt);
 		position.add(velocity.x * dt, velocity.y * dt);
 	}
 
-	private static final class Vector2dFixed extends Vector2d {
-		public Vector2dFixed() {
-			super();
-		}
+	/**
+	 * Sets the velocity of this body to orbit another body.
+	 *
+	 * @param other the body to orbit
+	 * @param G     the gravitational constant
+	 */
+	public void orbit(Body other, double G) {
+		double velocity = Math.sqrt(G * other.mass / distance(other));
+		//get the angle 90 degrees to the right of the line between the two bodies
+		double angle = Math.atan2(other.position.y - position.y, other.position.x - position.x) - Math.PI / 2;
+		this.velocity.set(velocity * Math.cos(angle), velocity * Math.sin(angle));
+	}
 
-		@Override
-		public String toString() {
-			return "(" + MathUtil.round(x, 3) + ", " + MathUtil.round(y, 3) + ")";
-		}
+	public double distance(Body other) {
+		return position.distance(other.position);
 	}
 
 	public NkColorf colorAsNkColorf() {
@@ -70,62 +85,39 @@ public class Body {
 		return new BodyBuilder();
 	}
 
+	@With
+	@NoArgsConstructor(access = AccessLevel.PRIVATE)
+	@AllArgsConstructor(access = AccessLevel.PRIVATE)
 	public static final class BodyBuilder {
 		private int mass;
 		private int radius;
-		private int r, g, b;
+		private Color color;
 		private int x, y;
 
-		private BodyBuilder() {
-		}
-
-		public BodyBuilder withMass(int mass) {
-			this.mass = mass;
-			return this;
-		}
-
-		public BodyBuilder withRadius(int radius) {
-			this.radius = radius;
-			return this;
-		}
-
-		public BodyBuilder withR(int r) {
-			this.r = r;
-			return this;
-		}
-
-		public BodyBuilder withG(int g) {
-			this.g = g;
-			return this;
-		}
-
-		public BodyBuilder withB(int b) {
-			this.b = b;
-			return this;
-		}
-
 		public BodyBuilder withColor(int r, int g, int b) {
-			this.r = r;
-			this.g = g;
-			this.b = b;
-			return this;
+			return this.withColor(new Color(r, g, b));
 		}
 
 		public BodyBuilder withPosition(int x, int y) {
-			this.x = x;
-			this.y = y;
-			return this;
-		}
-
-		public BodyBuilder withColor(Color color) {
-			this.r = color.getRed();
-			this.g = color.getGreen();
-			this.b = color.getBlue();
-			return this;
+			return this.withX(x).withY(y);
 		}
 
 		public Body build() {
-			return new Body(mass, radius, r, g, b, x, y);
+			return new Body(mass, radius, color, x, y);
+		}
+	}
+
+	/**
+	 * {@link Vector2d} with a fixed {@link #toString()} method.
+	 */
+	private static final class Vector2dFixed extends Vector2d {
+		public Vector2dFixed() {
+			super();
+		}
+
+		@Override
+		public String toString() {
+			return "(" + MathUtil.round(x, 3) + ", " + MathUtil.round(y, 3) + ")";
 		}
 	}
 }
