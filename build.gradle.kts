@@ -71,6 +71,10 @@ dependencies {
         includeMac(it)
     }
 
+    implementation("blue.endless:jankson:${"jankson_version"()}")!!.also {
+        shadow(it)
+    }
+
     for(platform in nativesPlatforms) {
         runtimeOnly("org.lwjgl:lwjgl:$lwjglVersion:natives-$platform")!!.also {
             shadow(it)
@@ -113,6 +117,20 @@ tasks.register<JavaExec>("run") {
 tasks.jar {
     manifest {
         attributes["Main-Class"] = "samuschair.orbital2.Orbital2Main"
+    }
+}
+
+tasks.register<JavaExec>("testRun") {
+    dependsOn(tasks.compileJava, tasks.processResources)
+    mainClass = "samuschair.orbital2.Test"
+    classpath(
+            configurations.runtimeClasspath.get(),
+            tasks.compileJava.get().destinationDirectory,
+            tasks.processResources.get().destinationDir
+    )
+    jvmArgs("-Xmx2G", "-Dorbital.debug=true")
+    if(isMac) {
+        jvmArgs("-XstartOnFirstThread")
     }
 }
 

@@ -6,10 +6,20 @@ import org.lwjgl.nuklear.NkContext;
 import org.lwjgl.nuklear.NkRect;
 import org.lwjgl.nuklear.NkWindow;
 import org.lwjgl.system.MemoryStack;
+import org.lwjgl.system.MemoryUtil;
+import samuschair.orbital2.Orbital2Main;
+import samuschair.orbital2.util.CursedUtil;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.nio.ByteBuffer;
+import java.nio.IntBuffer;
 import java.util.UUID;
 
 import static org.lwjgl.nuklear.Nuklear.*;
+import static org.lwjgl.glfw.GLFW.*;
+import static org.lwjgl.opengl.GL11C.*;
 
 /**
  * A Nuklear window
@@ -87,6 +97,35 @@ public abstract class Window {
 		this.y = (int) bounds.y();
 		this.width = (int) nk_window_get_width(ctx);
 		this.height = (int) nk_window_get_height(ctx);
+	}
+
+	public void takeScreenshot(File file) {
+		long win = Orbital2Main.getWindowId();
+		glfwMakeContextCurrent(win);
+		IntBuffer widthBuffer = MemoryUtil.memAllocInt(1);
+		IntBuffer heightBuffer = MemoryUtil.memAllocInt(1);
+		glfwGetFramebufferSize(win, widthBuffer, heightBuffer);
+		int width = widthBuffer.get(0), height = heightBuffer.get(0);
+		ByteBuffer pixels = MemoryUtil.memAlloc(width * height * 4); // 4 bytes per pixel
+		glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+		//crop the image to the window size
+		BufferedImage image = new BufferedImage(widthBuffer.get(0), heightBuffer.get(0), BufferedImage.TYPE_INT_ARGB);
+		for (int i = 0; i < width; i++) {
+			for (int j = 0; j < height; j++) {
+				int index = (i + j * width) * 4;
+				int r = pixels.get(index) & 0xFF;
+				int g = pixels.get(index + 1) & 0xFF;
+				int b = pixels.get(index + 2) & 0xFF;
+				int a = pixels.get(index + 3) & 0xFF;
+				image.setRGB(i, height - j - 1, (a << 24) | (r << 16) | (g << 8) | b);
+			}
+		}
+		image = image.getSubimage(x, y, this.width * 2, this.height * 2); // todo: why must it be x2?
+		try {
+			ImageIO.write(image, "png", file);
+		} catch (Exception e) {
+			throw CursedUtil.asUnchecked(e);
+		}
 	}
 
 	/**

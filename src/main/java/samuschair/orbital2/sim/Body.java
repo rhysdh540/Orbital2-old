@@ -23,7 +23,7 @@ public class Body {
 
 	public final Color color;
 
-	public Body(int mass, int radius, Color color, int x, int y) {
+	public Body(int mass, int radius, Color color, double x, double y) {
 		this.mass = mass;
 		this.radius = radius;
 		this.position = new Vector2dFixed().set(x, y);
@@ -87,19 +87,23 @@ public class Body {
 
 	@With
 	@NoArgsConstructor(access = AccessLevel.PRIVATE)
-	@AllArgsConstructor(access = AccessLevel.PRIVATE)
+	@AllArgsConstructor(access = AccessLevel.PRIVATE) // for @With
 	public static final class BodyBuilder {
 		private int mass;
 		private int radius;
 		private Color color;
-		private int x, y;
+		private double x, y;
 
 		public BodyBuilder withColor(int r, int g, int b) {
 			return this.withColor(new Color(r, g, b));
 		}
 
-		public BodyBuilder withPosition(int x, int y) {
+		public BodyBuilder withPosition(double x, double y) {
 			return this.withX(x).withY(y);
+		}
+
+		public BodyBuilder withPosition(Vector2dc pos) {
+			return this.withX(pos.x()).withY(pos.y());
 		}
 
 		public Body build() {

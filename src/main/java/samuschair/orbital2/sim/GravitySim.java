@@ -1,5 +1,6 @@
 package samuschair.orbital2.sim;
 
+import blue.endless.jankson.annotation.Serializer;
 import samuschair.orbital2.util.MathUtil;
 
 import java.util.LinkedHashSet;
@@ -22,6 +23,7 @@ public class GravitySim {
 	public void addBody(Body body) { bodies.add(body); }
 
 	public void update(double dt) {
+		if(bodies.isEmpty()) return;
 		double timesToRun = TARGET_ITERATIONS_PER_FRAME / dt; // as dt goes up, we run fewer times
 		timesToRun /= MathUtil.log2(bodies.size()); // as bodies go up, we run fewer times - based on the number of digits in the number of bodies
 
@@ -74,5 +76,10 @@ public class GravitySim {
 
 	public void reset() {
 		bodies.forEach(Body::reset);
+	}
+
+	@Serializer
+	public static GravitySim fromJson() {
+		return new GravitySim();
 	}
 }

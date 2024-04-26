@@ -100,7 +100,7 @@ public class Orbital2Main {
 	// endregion
 
 	// region Nuklear variables
-	private static final NkContext ctx = NkContext.create();
+	static final NkContext ctx = NkContext.create();
 	private static final NkUserFont defaultFont = NkUserFont.create();
 	private static final NkBuffer glDrawCommands = NkBuffer.create();
 	private static final NkDrawNullTexture emptyTexture = NkDrawNullTexture.create();
@@ -115,6 +115,7 @@ public class Orbital2Main {
 	private static int uniformProjectionMatrix;
 	// endregion
 
+	@Getter
 	private static final Map<Window, Vector2i> windows = new LinkedHashMap<>();
 	static {
 //		windows.put(new TerminalWindow(), new Vector2i(200, 400));
