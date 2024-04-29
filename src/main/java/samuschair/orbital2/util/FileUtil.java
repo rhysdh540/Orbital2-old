@@ -24,6 +24,7 @@ public class FileUtil {
 			.registerDeserializer(JsonObject.class, Body.class, FileUtil::deserialize)
 			.registerTypeFactory(Body.class, () -> Body.builder().build())
 			.build();
+
 	private static final JsonGrammar GRAMMAR = JsonGrammar.builder()
 			.printTrailingCommas(false)
 			.bareSpecialNumerics(true)
@@ -32,9 +33,11 @@ public class FileUtil {
 			.printUnquotedKeys(true)
 			.build();
 
-	private static final Path SAVE_DIR = Path.of(System.getProperty("user.home"), ".orbital2");
+	private static final Path SAVE_DIR;
 
 	static {
+		String property = System.getProperty("orbital.saveDir");
+		SAVE_DIR = property == null ? Path.of(System.getProperty("user.home"), ".orbital2") : Path.of(property);
 		try {
 			Files.createDirectories(SAVE_DIR);
 		} catch (Exception e) {

@@ -72,4 +72,14 @@ public final class IOUtil {
 		buffer.flip();
 		return MemoryUtil.memSlice(buffer);
 	}
+
+	public static String readResource(String resource) {
+		try {
+			return new String(IOUtil.class.getClassLoader().getResourceAsStream(resource).readAllBytes());
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		} catch (NullPointerException e) {
+			return null;
+		}
+	}
 }

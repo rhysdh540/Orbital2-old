@@ -18,6 +18,7 @@ import org.lwjgl.system.Configuration;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.NativeResource;
 import org.lwjgl.system.Platform;
+import samuschair.orbital2.util.IOUtil;
 import samuschair.orbital2.window.SimWindow;
 import samuschair.orbital2.window.Window;
 
@@ -167,32 +168,8 @@ public class Orbital2Main {
 	}
 
 	private static void setupContext() {
-		String NK_SHADER_VERSION = Platform.get() == Platform.MACOSX ? "#version 150\n" : "#version 300 es\n";
-		String vert =
-				NK_SHADER_VERSION + """
-						uniform mat4 ProjMtx;
-						in vec2 Position;
-						in vec2 TexCoord;
-						in vec4 Color;
-						out vec2 Frag_UV;
-						out vec4 Frag_Color;
-						void main() {
-							Frag_UV = TexCoord;
-							Frag_Color = Color;
-							gl_Position = ProjMtx * vec4(Position.xy, 0, 1);
-						}
-						""";
-		String frag =
-				NK_SHADER_VERSION + """
-						precision mediump float;
-						uniform sampler2D Texture;
-						in vec2 Frag_UV;
-						in vec4 Frag_Color;
-						out vec4 Out_Color;
-						void main() {
-							Out_Color = Frag_Color * texture(Texture, Frag_UV.st);
-						}
-						""";
+		String vert = IOUtil.readResource("shaders/vertex.vert");
+		String frag = IOUtil.readResource("shaders/fragment.frag");
 
 		nk_buffer_init(glDrawCommands, ALLOCATOR, BUFFER_INITIAL_SIZE);
 		shaderProgram = glCreateProgram();
