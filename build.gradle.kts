@@ -7,7 +7,7 @@ import java.util.zip.Deflater
 plugins {
     java
     idea
-    id("com.github.johnrengelman.shadow") version "8.1.1"
+    id("com.github.johnrengelman.shadow") version("8.1.1")
 }
 
 buildscript {
@@ -34,6 +34,7 @@ dependencies {
 
     implementation("org.joml:joml:${"joml_version"()}")!!.also {
         shadow(it)
+        includeMac(it)
     }
 
     compileOnly("com.google.code.findbugs:jsr305:3.0.2")
@@ -59,6 +60,7 @@ dependencies {
 
     implementation("blue.endless:jankson:${"jankson_version"()}")!!.also {
         shadow(it)
+        includeMac(it)
     }
 
     for(platform in nativesPlatforms) {
@@ -104,6 +106,10 @@ tasks.jar {
     manifest {
         attributes["Main-Class"] = "samuschair.orbital2.Orbital2Main"
     }
+
+    doLast {
+        advStrip(archiveFile.get().asFile)
+    }
 }
 
 tasks.register<JavaExec>("testRun") {
@@ -120,27 +126,114 @@ tasks.register<JavaExec>("testRun") {
     }
 }
 
-tasks.register("macApp") {
-    dependsOn(tasks.shadowJar.get())
-    tasks.assemble.get().dependsOn(this)
+tasks.shadowJar {
+    from(tasks.jar.get())
+    exclude {
+        it.path.startsWith("META-INF/") && it.path != "META-INF/MANIFEST.MF"
+    }
+
+    archiveClassifier = "all"
+
     doLast {
-        val appDir = projectDir.resolve("build/app")
-        appDir.mkdirs()
+        advStrip(archiveFile.get().asFile)
+    }
+}
 
-        val app = appDir.resolve("${project.name}.app")
-        app.mkdirs()
+tasks.register("macApp") {
+    dependsOn(tasks.jar.get())
+    doLast {
+        makeApp()
+    }
+}
 
-        val contents = app.resolve("Contents")
-        contents.mkdirs()
+fun advzip(zip: File, level: Int = 3, iterations: Int? = null) {
+    val args = mutableListOf("advzip", "-z", "-$level", "-q", zip.absolutePath)
+    if (iterations != null) {
+        if(iterations < 1) throw IllegalArgumentException("Iterations must be at least 1")
+        if(level != 4) throw IllegalArgumentException("Iterations are only supported for level 4")
+        args.add(iterations.toString())
+    }
 
-        val macos = contents.resolve("MacOS")
-        macos.mkdirs()
+    exec { commandLine(args) }
+}
 
-        val java = contents.resolve("Java")
-        java.mkdirs()
+fun stripJar(jar: File) {
+    val contents = linkedMapOf<String, ByteArray>()
+    JarFile(jar).use {
+        it.entries().asIterator().forEach { entry ->
+            if (!entry.isDirectory) {
+                contents[entry.name] = it.getInputStream(entry).readAllBytes()
+            }
+        }
+    }
 
-        val infoPlist = contents.resolve("Info.plist")
-        infoPlist.writeText("""
+    jar.delete()
+
+    JarOutputStream(jar.outputStream()).use { out ->
+        out.setLevel(Deflater.BEST_COMPRESSION)
+        contents.forEach { var (name, bytes) = it
+            if (name.endsWith(".json")) {
+                bytes = JsonOutput.toJson(JsonSlurper().parse(bytes)).toByteArray()
+            }
+
+            if (name.endsWith(".class")) {
+                val reader = ClassReader(bytes)
+                val node = ClassNode()
+                reader.accept(node, 0)
+
+                node.methods.forEach { method ->
+                    method.localVariables?.clear()
+                    method.parameters?.clear()
+                }
+                if ("strip_source_files"().toBoolean()) {
+                    node.sourceFile = null
+                }
+
+                val writer = ClassWriter(0)
+                node.accept(writer)
+                bytes = writer.toByteArray()
+            }
+
+            out.putNextEntry(JarEntry(name))
+            out.write(bytes)
+            out.closeEntry()
+        }
+        out.finish()
+        out.close()
+    }
+}
+
+fun advStrip(input: Any) {
+    val jar: File = when (input) {
+        is Jar -> input.archiveFile.get().asFile
+        is File -> input
+        else -> throw IllegalArgumentException("Input must be a Jar or File")
+    }
+    stripJar(jar)
+    advzip(jar)
+}
+
+fun makeApp() {
+    val appDir = projectDir.resolve("build/app")
+    appDir.mkdirs()
+
+    val app = appDir.resolve("${project.name}.app")
+    if(app.exists()) {
+        app.deleteRecursively()
+    }
+    app.mkdirs()
+
+    val contents = app.resolve("Contents")
+    contents.mkdirs()
+
+    val macos = contents.resolve("MacOS")
+    macos.mkdirs()
+
+    val java = contents.resolve("Java")
+    java.mkdirs()
+
+    val infoPlist = contents.resolve("Info.plist")
+    infoPlist.writeText("""
             <?xml version="1.0" encoding="UTF-8"?>
             <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "https://www.apple.com/DTDs/PropertyList-1.0.dtd">
             <plist version="1.0">
@@ -165,96 +258,35 @@ tasks.register("macApp") {
             </plist>
         """.trimIndent())
 
-        val jar = tasks.shadowJar.get().archiveFile.get().asFile
-        jar.copyTo(java.resolve(jar.name), overwrite = true)
+    tasks.jar.get().archiveFile.get().asFile.also {
+        it.copyTo(java.resolve(it.name), overwrite = true)
+    }
 
-        val script = macos.resolve("launcher")
-        script.writeText("""
+    val script = macos.resolve("launcher")
+    script.writeText("""
             #!/bin/bash
-            DIR=$(cd "$(dirname "$0")"; pwd)
-            # get all jars in the Java directory
-            JARS=$(ls "${"$"}DIR/../Java")
-            # add the Java directory to the classpath
-            CP="${"$"}DIR/../Java"
-            # add all jars to the classpath
-            for JAR in ${"$"}JARS; do
-                CP="${"$"}CP:${"$"}DIR/../Java/${"$"}JAR"
+            cd "$(dirname "${'$'}0")/../Java"
+            JARS=$(ls *.jar)
+            CP=""
+            for JAR in ${'$'}JARS; do
+              CP="${'$'}CP:${'$'}JAR"
             done
-            # run the jar
-            java -XstartOnFirstThread -cp "${"$"}CP" -jar "${"$"}DIR/../Java/${jar.name}"
+            java -cp ${'$'}CP -XstartOnFirstThread -Xms2G -Xmx2G ${tasks.jar.get().manifest.attributes["Main-Class"]}
         """.trimIndent())
 
-        script.setExecutable(true)
+    script.setExecutable(true)
 
-        includeMac.forEach {
-            it.copyTo(java.resolve(it.name), overwrite = true)
-        }
-
-        exec {
-            commandLine("/usr/bin/SetFile", "-a", "B", app.absolutePath)
-        }
+    includeMac.files.forEach {
+        it.copyTo(java.resolve(it.name), overwrite = true).also(::advStrip)
     }
 
-}
-
-tasks.shadowJar {
-    from(tasks.jar.get())
-    exclude {
-        it.path.startsWith("META-INF/") && it.path != "META-INF/MANIFEST.MF"
-    }
-
-    archiveClassifier = "all"
-
-    doLast {
-        val jar = archiveFile.get().asFile
-        val contents = linkedMapOf<String, ByteArray>()
-        JarFile(jar).use {
-            it.entries().asIterator().forEach { entry ->
-                if (!entry.isDirectory) {
-                    contents[entry.name] = it.getInputStream(entry).readAllBytes()
-                }
-            }
-        }
-
-        jar.delete()
-
-        JarOutputStream(jar.outputStream()).use { out ->
-            out.setLevel(Deflater.BEST_COMPRESSION)
-            contents.forEach { var (name, bytes) = it
-                if (name.endsWith(".json")) {
-                    bytes = JsonOutput.toJson(JsonSlurper().parse(bytes)).toByteArray()
-                }
-
-                if (name.endsWith(".class")) {
-                    val reader = ClassReader(bytes)
-                    val node = ClassNode()
-                    reader.accept(node, 0)
-
-                    node.methods.forEach { method ->
-                        method.localVariables?.clear()
-                        method.parameters?.clear()
-                    }
-                    if ("strip_source_files"().toBoolean()) {
-                        node.sourceFile = null
-                    }
-
-                    val writer = ClassWriter(0)
-                    node.accept(writer)
-                    bytes = writer.toByteArray()
-                }
-
-                out.putNextEntry(JarEntry(name))
-                out.write(bytes)
-                out.closeEntry()
-            }
-            out.finish()
-            out.close()
-        }
+    exec {
+        commandLine("/usr/bin/SetFile", "-a", "B", app.absolutePath)
     }
 }
 
 tasks.assemble {
-    dependsOn(tasks.shadowJar.get())
+    dependsOn(tasks["macApp"], tasks.shadowJar)
 }
 
 operator fun String.invoke(): String = rootProject.ext[this] as? String
