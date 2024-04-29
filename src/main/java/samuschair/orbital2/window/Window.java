@@ -12,9 +12,9 @@ import samuschair.orbital2.util.CursedUtil;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
-import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
+import java.nio.file.Path;
 import java.util.UUID;
 
 import static org.lwjgl.nuklear.Nuklear.*;
@@ -99,7 +99,7 @@ public abstract class Window {
 		this.height = (int) nk_window_get_height(ctx);
 	}
 
-	public void takeScreenshot(File file) {
+	public void takeScreenshot(Path path) {
 		long win = Orbital2Main.getWindowId();
 		glfwMakeContextCurrent(win);
 		IntBuffer widthBuffer = MemoryUtil.memAllocInt(1);
@@ -122,7 +122,7 @@ public abstract class Window {
 		}
 		image = image.getSubimage(x, y, this.width * 2, this.height * 2); // todo: why must it be x2?
 		try {
-			ImageIO.write(image, "png", file);
+			ImageIO.write(image, "png", path.toFile());
 		} catch (Exception e) {
 			throw CursedUtil.asUnchecked(e);
 		}

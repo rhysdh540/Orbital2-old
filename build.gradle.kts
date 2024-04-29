@@ -7,7 +7,6 @@ import java.util.zip.Deflater
 plugins {
     java
     idea
-    id("edu.sc.seis.macAppBundle") version "2.3.1" apply(System.getProperty("os.name").lowercase().contains("mac"))
     id("com.github.johnrengelman.shadow") version "8.1.1"
 }
 
@@ -28,19 +27,6 @@ repositories {
 }
 
 val isMac = System.getProperty("os.name").lowercase().contains("mac")
-
-if(isMac) {
-    the<edu.sc.seis.macAppBundle.MacAppBundlePluginExtension>().apply {
-        mainClassName = "samuschair.orbital2.Orbital2Main"
-        javaExtras["-XstartOnFirstThread"] = null
-        runtimeConfigurationName = includeMac.name
-        jreHome = javaToolchains.launcherFor { languageVersion = JavaLanguageVersion.of(17) }.get().executablePath.asFile
-                .parentFile // bin
-                .parentFile // home
-                .toString()
-        bundleIdentifier = "$group.${base.archivesName}"
-    }
-}
 
 dependencies {
     // test runtime dependency on the old version so we can see it but cant reference it
@@ -132,6 +118,83 @@ tasks.register<JavaExec>("testRun") {
     if(isMac) {
         jvmArgs("-XstartOnFirstThread")
     }
+}
+
+tasks.register("macApp") {
+    dependsOn(tasks.shadowJar.get())
+    tasks.assemble.get().dependsOn(this)
+    doLast {
+        val appDir = projectDir.resolve("build/app")
+        appDir.mkdirs()
+
+        val app = appDir.resolve("${project.name}.app")
+        app.mkdirs()
+
+        val contents = app.resolve("Contents")
+        contents.mkdirs()
+
+        val macos = contents.resolve("MacOS")
+        macos.mkdirs()
+
+        val java = contents.resolve("Java")
+        java.mkdirs()
+
+        val infoPlist = contents.resolve("Info.plist")
+        infoPlist.writeText("""
+            <?xml version="1.0" encoding="UTF-8"?>
+            <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "https://www.apple.com/DTDs/PropertyList-1.0.dtd">
+            <plist version="1.0">
+            <dict>
+                <key>CFBundleExecutable</key>
+                <string>launcher</string>
+                <key>CFBundleIconFile</key>
+                <string>GenericApp.icns</string>
+                <key>CFBundleIdentifier</key>
+                <string>${group}.${base.archivesName.get()}</string>
+                <key>CFBundleName</key>
+                <string>${project.name}</string>
+                <key>CFBundlePackageType</key>
+                <string>APPL</string>
+                <key>CFBundleShortVersionString</key>
+                <string>${version}</string>
+                <key>CFBundleVersion</key>
+                <string>${version}</string>
+                <key>LSMinimumSystemVersion</key>
+                <string>10.14</string>
+            </dict>
+            </plist>
+        """.trimIndent())
+
+        val jar = tasks.shadowJar.get().archiveFile.get().asFile
+        jar.copyTo(java.resolve(jar.name), overwrite = true)
+
+        val script = macos.resolve("launcher")
+        script.writeText("""
+            #!/bin/bash
+            DIR=$(cd "$(dirname "$0")"; pwd)
+            # get all jars in the Java directory
+            JARS=$(ls "${"$"}DIR/../Java")
+            # add the Java directory to the classpath
+            CP="${"$"}DIR/../Java"
+            # add all jars to the classpath
+            for JAR in ${"$"}JARS; do
+                CP="${"$"}CP:${"$"}DIR/../Java/${"$"}JAR"
+            done
+            # run the jar
+            java -XstartOnFirstThread -cp "${"$"}CP" -jar "${"$"}DIR/../Java/${jar.name}"
+        """.trimIndent())
+
+        script.setExecutable(true)
+
+        includeMac.forEach {
+            it.copyTo(java.resolve(it.name), overwrite = true)
+        }
+
+        exec {
+            commandLine("/usr/bin/SetFile", "-a", "B", app.absolutePath)
+        }
+    }
+
 }
 
 tasks.shadowJar {
