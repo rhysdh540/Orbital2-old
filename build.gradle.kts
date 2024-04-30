@@ -66,13 +66,16 @@ dependencies {
     }
 }
 
-tasks.register<JavaExec>("run") {
+tasks.register<JavaExec>("run") { mainClass = "samuschair.orbital2.Orbital2Main" }
+
+tasks.register<JavaExec>("testRun") { mainClass = "samuschair.orbital2.Test" }
+
+tasks.withType<JavaExec> {
     dependsOn(tasks.compileJava, tasks.processResources)
-    mainClass = "samuschair.orbital2.Orbital2Main"
     classpath(
-            configurations.runtimeClasspath.get(),
-            tasks.compileJava.get().destinationDirectory,
-            tasks.processResources.get().destinationDir
+        configurations.runtimeClasspath.get(),
+        tasks.compileJava.get().destinationDirectory,
+        tasks.processResources.get().destinationDir
     )
     jvmArgs("-Xmx2G", "-Dorbital.debug=true")
     if(isMac) {
@@ -87,20 +90,6 @@ tasks.jar {
 
     doLast {
         advStrip(archiveFile.get().asFile)
-    }
-}
-
-tasks.register<JavaExec>("testRun") {
-    dependsOn(tasks.compileJava, tasks.processResources)
-    mainClass = "samuschair.orbital2.Test"
-    classpath(
-            configurations.runtimeClasspath.get(),
-            tasks.compileJava.get().destinationDirectory,
-            tasks.processResources.get().destinationDir
-    )
-    jvmArgs("-Xmx2G", "-Dorbital.debug=true")
-    if(isMac) {
-        jvmArgs("-XstartOnFirstThread")
     }
 }
 
