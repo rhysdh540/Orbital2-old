@@ -3,6 +3,11 @@ import org.objectweb.asm.*
 import org.objectweb.asm.tree.*
 import java.util.jar.*
 import java.util.zip.Deflater
+import javax.xml.parsers.DocumentBuilderFactory
+import javax.xml.transform.TransformerFactory
+import javax.xml.transform.dom.DOMSource
+import javax.xml.transform.stream.StreamResult
+
 
 plugins {
     java
@@ -20,8 +25,6 @@ version = "app_version"()
 
 base.archivesName = "archives_base_name"()
 
-val includeMac: Configuration by configurations.creating
-
 repositories {
     mavenCentral()
 }
@@ -32,16 +35,11 @@ dependencies {
     // test runtime dependency on the old version so we can see it but cant reference it
     testRuntimeOnly(files("libs/orbital-old.jar"))
 
-    implementation("org.joml:joml:${"joml_version"()}")!!.also {
-        shadow(it)
-        includeMac(it)
-    }
+    implementation("org.joml:joml:${"joml_version"()}")!!.also(::shadow)
 
     compileOnly("com.google.code.findbugs:jsr305:3.0.2")
 
-    compileOnly("org.projectlombok:lombok:${"lombok_version"()}")!!.also {
-        annotationProcessor(it)
-    }
+    compileOnly("org.projectlombok:lombok:${"lombok_version"()}")!!.also(::annotationProcessor)
 
     val lwjglVersion = "lwjgl_version"()
     val nativesPlatforms = "lwjgl_natives"().split(", ")
@@ -50,40 +48,20 @@ dependencies {
     platform("org.lwjgl:lwjgl-bom:$lwjglVersion").also {
         implementation(it)
         shadow(it)
-        includeMac(it)
     }
 
-    implementation("org.lwjgl:lwjgl")!!.also {
-        shadow(it)
-        includeMac(it)
-    }
+    implementation("org.lwjgl:lwjgl")!!.also(::shadow)
 
-    implementation("blue.endless:jankson:${"jankson_version"()}")!!.also {
-        shadow(it)
-        includeMac(it)
-    }
+    implementation("blue.endless:jankson:${"jankson_version"()}")!!.also(::shadow)
 
     for(platform in nativesPlatforms) {
-        runtimeOnly("org.lwjgl:lwjgl:$lwjglVersion:natives-$platform")!!.also {
-            shadow(it)
-            if(platform.startsWith("macos")) {
-                includeMac(it)
-            }
-        }
+        runtimeOnly("org.lwjgl:lwjgl:$lwjglVersion:natives-$platform")!!.also(::shadow)
     }
 
     for(module in modules) {
-        implementation("org.lwjgl:lwjgl-$module")!!.also {
-            shadow(it)
-            includeMac(it)
-        }
+        implementation("org.lwjgl:lwjgl-$module")!!.also(::shadow)
         for(platform in nativesPlatforms) {
-            runtimeOnly("org.lwjgl:lwjgl-$module:$lwjglVersion:natives-$platform")!!.also {
-                shadow(it)
-                if(platform.startsWith("macos")) {
-                    includeMac(it)
-                }
-            }
+            runtimeOnly("org.lwjgl:lwjgl-$module:$lwjglVersion:natives-$platform")!!.also(::shadow)
         }
     }
 }
@@ -147,6 +125,7 @@ tasks.register("macApp") {
 }
 
 fun advzip(zip: File, level: Int = 3, iterations: Int? = null) {
+    if("advzip"().toBoolean().not()) return
     val args = mutableListOf("advzip", "-z", "-$level", "-q", zip.absolutePath)
     if (iterations != null) {
         if(iterations < 1) throw IllegalArgumentException("Iterations must be at least 1")
@@ -204,13 +183,14 @@ fun stripJar(jar: File) {
 }
 
 fun advStrip(input: Any) {
-    val jar: File = when (input) {
+    when (input) {
         is Jar -> input.archiveFile.get().asFile
         is File -> input
         else -> throw IllegalArgumentException("Input must be a Jar or File")
+    }.also {
+        stripJar(it)
+        advzip(it)
     }
-    stripJar(jar)
-    advzip(jar)
 }
 
 fun makeApp() {
@@ -232,31 +212,34 @@ fun makeApp() {
     val java = contents.resolve("Java")
     java.mkdirs()
 
-    val infoPlist = contents.resolve("Info.plist")
-    infoPlist.writeText("""
-            <?xml version="1.0" encoding="UTF-8"?>
-            <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "https://www.apple.com/DTDs/PropertyList-1.0.dtd">
-            <plist version="1.0">
-            <dict>
-                <key>CFBundleExecutable</key>
-                <string>launcher</string>
-                <key>CFBundleIconFile</key>
-                <string>GenericApp.icns</string>
-                <key>CFBundleIdentifier</key>
-                <string>${group}.${base.archivesName.get()}</string>
-                <key>CFBundleName</key>
-                <string>${project.name}</string>
-                <key>CFBundlePackageType</key>
-                <string>APPL</string>
-                <key>CFBundleShortVersionString</key>
-                <string>${version}</string>
-                <key>CFBundleVersion</key>
-                <string>${version}</string>
-                <key>LSMinimumSystemVersion</key>
-                <string>10.14</string>
-            </dict>
-            </plist>
-        """.trimIndent())
+    val plist = contents.resolve("Info.plist")
+    DocumentBuilderFactory.newInstance().newDocumentBuilder().newDocument().apply {
+        val plistTag = createElement("plist").apply {
+            setAttribute("version", "1.0")
+        }
+
+        appendChild(plistTag)
+        val dict = mapOf(
+            "CFBundleExecutable" to "launcher",
+            "CFBundleIconFile" to "GenericApp.icns",
+            "CFBundleIdentifier" to "${group}.${base.archivesName.get()}",
+            "CFBundleName" to project.name,
+            "CFBundlePackageType" to "APPL",
+            "CFBundleShortVersionString" to version,
+            "CFBundleVersion" to version,
+            "LSMinimumSystemVersion" to "10.14"
+        )
+
+        createElement("dict").apply {
+            dict.forEach { (key, value) ->
+                appendChild(createElement("key").apply { textContent = key })
+                appendChild(createElement("string").apply { textContent = value.toString() })
+            }
+            plistTag.appendChild(this)
+        }
+
+        TransformerFactory.newInstance().newTransformer().transform(DOMSource(this), StreamResult(plist))
+    }
 
     tasks.jar.get().archiveFile.get().asFile.also {
         it.copyTo(java.resolve(it.name), overwrite = true)
@@ -276,13 +259,12 @@ fun makeApp() {
 
     script.setExecutable(true)
 
-    includeMac.files.forEach {
+    configurations["runtimeClasspath"].files.forEach {
+        if(it.name.contains("natives") && !it.name.contains("mac")) return@forEach
         it.copyTo(java.resolve(it.name), overwrite = true).also(::advStrip)
     }
 
-    exec {
-        commandLine("/usr/bin/SetFile", "-a", "B", app.absolutePath)
-    }
+    exec { commandLine("/usr/bin/SetFile", "-a", "B", app.absolutePath) }
 }
 
 tasks.assemble {

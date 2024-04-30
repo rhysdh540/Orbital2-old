@@ -21,7 +21,7 @@ jobs:
             cache-read-only: false
 
       -   name: do the build
-          run: ./gradlew assemble
+          run: ./gradlew assemble -Dadvzip=false
           continue-on-error: true
 
       -   name: upload artifacts
@@ -30,3 +30,4 @@ jobs:
             name: orbital2-artifacts-v${{ github.run_number }}
             path: |
               build/libs/*.jar
+              build/app/*.app
